@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Container } from '../components';
 import { useSelector } from 'react-redux';
 import appwriteService from '../appWrite/config'; // Make sure this path is correct
-import PostCard from '../components/PostCard.jsx';
+import PostCard from '../components';
 import { Link } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { Query } from 'appwrite'; // Ensure Appwrite SDK Query is imported
