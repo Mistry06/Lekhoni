@@ -1,6 +1,6 @@
 // src/pages/LoginPage.jsx
 import React from 'react';
-import Login from '../components/Login'; // Import as a default export
+import { Login } from '../components'; // Import as a default export
 
 function LoginPage() { // Renamed the wrapper component for clarity
   return (
