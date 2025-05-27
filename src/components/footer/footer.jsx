@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Logo from '../Logo'; // Assuming Logo is a well-designed component
+import Logo from '../logo'; // Assuming Logo is a well-designed component
 import About from './about';
 import Contact from './contact';
 
