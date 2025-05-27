@@ -6,7 +6,7 @@ import { Provider } from 'react-redux';
 import store from './store/store.js';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './pages/home.jsx';
-import Login from './pages/Login.jsx';
+import LoginPage from './pages/login.jsx';
 import Signup from './pages/Signup.jsx';
 import AllPosts from './pages/allPosts.jsx';
 import AddPost from './pages/addPost.jsx';
@@ -33,7 +33,7 @@ const router = createBrowserRouter([
                 path: '/login',
                 element: (
                     <Protected authentication={false}> {/* Pass authentication=false */}
-                        <Login />
+                        <LoginPage />
                     </Protected>
                 ),
             },
