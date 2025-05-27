@@ -5,13 +5,13 @@ import Container from "./container/container";
 import Logo from "./logo.jsx";
 import LogoutBtn from "./header/logoutbtn";
 import RTE from "./RTE";
-import Signup from "./Signup";
-import Login from "./Login";
-import Button from "./Button";
+import Signup from "./signup";
+import Login from "./login";
+import Button from "./button";
 import PostForm from './postFrom/postFrom'
-import PostCard from "./PostCard";
+import PostCard from "./postCard";
 import AuthLayout from "./authLayout";
-import Input from "./Input";
+import Input from "./input";
 export {
     Header,
     Footer,
