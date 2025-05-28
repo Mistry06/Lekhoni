@@ -217,17 +217,18 @@ function TermsOfService() {
                         </li>
                        <li>
                             {/* Corrected Link to Contact Page */}
-                            **By Visiting Our Contact Page:** <Link to="/contact" className="text-red-400 hover:underline">/contact</Link>
+                            **By Visiting Our Contact Page:** <Link to="/contact" className="text-red-400 hover:underline">contact</Link>
                         </li>
                     </ul>
 
-                    {/* Last Updated Date - IMPORTANT for legal documents */}
+                   
+
+                </div>
+            </section> 
+            {/* Last Updated Date - IMPORTANT for legal documents */}
                     <p className="text-sm text-gray-500 mt-12 text-right">
                         Last Updated: May 27, 2025
                     </p>
-
-                </div>
-            </section>
         </div>
     );
 }
