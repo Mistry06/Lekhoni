@@ -13,12 +13,17 @@ import AddPost from './pages/addPost.jsx';
 import EditPost from './pages/editPost.jsx';
 import Post from './pages/post.jsx';
 import Protected from './components/authLayout.jsx'; // Import the new component
+
+// --- Corrected Imports ---
+// Ensure these paths exactly match your file names, including case and no extra spaces
 import About from './components/footer/about.jsx';
 import Contact from './components/footer/contact.jsx';
 import TermsOfService from './components/footer/terms .jsx';
-import PrivacyPolicy from './components/footer/private.jsx';
-import Account from './pages/account.jsx'; // Make sure this import is correct
-import EditProfile from './pages/editProfile.jsx'; // Make sure this import is correct
+import PrivacyPolicy from './components/footer/private.jsx'
+// --- End Corrected Imports ---
+
+import Account from './pages/account.jsx';
+import EditProfile from './pages/editProfile.jsx';
 
 const router = createBrowserRouter([
     {
@@ -32,7 +37,7 @@ const router = createBrowserRouter([
             {
                 path: '/login',
                 element: (
-                    <Protected authentication={false}> {/* Pass authentication=false */}
+                    <Protected authentication={false}>
                         <LoginPage />
                     </Protected>
                 ),
@@ -40,7 +45,7 @@ const router = createBrowserRouter([
             {
                 path: '/signup',
                 element: (
-                    <Protected authentication={false}> {/* Pass authentication=false */}
+                    <Protected authentication={false}>
                         <Signup />
                     </Protected>
                 ),
@@ -48,7 +53,7 @@ const router = createBrowserRouter([
             {
                 path: '/all-posts',
                 element: (
-                    <Protected authentication> {/* authentication=true by default */}
+                    <Protected authentication>
                         <AllPosts />
                     </Protected>
                 ),
@@ -56,7 +61,7 @@ const router = createBrowserRouter([
             {
                 path: '/add-post',
                 element: (
-                    <Protected authentication> {/* authentication=true by default */}
+                    <Protected authentication>
                         <AddPost />
                     </Protected>
                 ),
@@ -64,24 +69,21 @@ const router = createBrowserRouter([
             {
                 path: '/edit-post/:slug',
                 element: (
-                    <Protected authentication> {/* authentication=true by default */}
+                    <Protected authentication>
                         <EditPost />
                     </Protected>
                 ),
             },
             {
                 path: '/post/:slug',
-                element: <Post />, // Decide if individual posts should be public or protected
-                // For a blog, individual posts are often public, but editing requires login.
-                // If you want posts themselves protected, wrap like others:
-                // <AuthLayout authentication><Post /></AuthLayout>
+                element: <Post />,
             },
             {
-                path:'/about', // Corrected path to lowercase for consistency
+                path:'/about',
                 element:<About/>
             },
             {
-                path:'/contact', // Corrected path to lowercase for consistency
+                path:'/contact',
                 element:<Contact/>
             },
             {
@@ -93,16 +95,15 @@ const router = createBrowserRouter([
                 element:<PrivacyPolicy/>
             },
             {
-                // FIX: Corrected path from '//acccount' to '/account'
-                path:'/account',
+                path:'/account', // CORRECTED PATH FROM '//acccount'
                 element: (
-                    <Protected authentication> {/* Account page typically requires authentication */}
+                    <Protected authentication>
                         <Account />
                     </Protected>
                 )
             },
             {
-                path: '/edit-profile', // New route for editing profile
+                path: '/edit-profile',
                 element: (
                     <Protected authentication>
                         <EditProfile />
