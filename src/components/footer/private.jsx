@@ -163,7 +163,7 @@ function PrivacyPolicy() {
                         </li>
                         <li>
                             {/* Corrected Link to Contact Page */}
-                            **By Visiting Our Contact Page:** <Link to="/contact" className="text-red-400 hover:underline">/contact</Link>
+                            **By Visiting Our Contact Page:** <Link to="/contact" className="text-red-400 hover:underline">contact</Link>
                         </li>
                     </ul>
                 </div>
