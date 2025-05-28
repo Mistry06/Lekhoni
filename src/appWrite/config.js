@@ -77,9 +77,10 @@ export class Service {
      * @param {string} data.slug - Updated slug.
      * @param {string} data.like - Updated likes array as JSON string.
      * @param {string} data.authorName - Updated name of the author.
+     * @param {string} data.currentUserId - ID of the currently logged-in user performing the update. <--- ADDED THIS
      * @returns {Promise<object>} The updated document.
      */
-    async updatePost(documentId, { title, content, image, status, slug, like, authorName }) {
+    async updatePost(documentId, { title, content, image, status, slug, like, authorName, currentUserId }) { // <--- ADDED currentUserId here
         try {
             // 1. Fetch the existing document to get its current permissions and other data
             const currentPost = await this.databases.getDocument(
@@ -103,9 +104,8 @@ export class Service {
             }
 
             // 3. Ensure the original creator (based on `currentPost.userid`) always retains their read/write permissions.
-            // This is crucial if `userid` is the definitive owner, and the post is being updated by someone else (e.g., an admin).
             const originalCreatorId = currentPost.userid;
-            if (originalCreatorId) { // Only add if originalCreatorId exists
+            if (originalCreatorId) {
                 const hasOriginalCreatorRead = updatedPermissions.some(p => p.includes(`read("user:${originalCreatorId}")`));
                 if (!hasOriginalCreatorRead) {
                     updatedPermissions.push(Permission.read(Role.user(originalCreatorId)));
@@ -116,9 +116,8 @@ export class Service {
                 }
             }
 
-
             // 4. Ensure the current logged-in user performing the update always has write and read access to this document.
-            const currentUserId = this.client.getID(); // Get the ID of the currently logged-in user
+            // This now uses the passed 'currentUserId' parameter.
             if (currentUserId) { // Only add if currentUserId exists
                 const hasCurrentUserWrite = updatedPermissions.some(p => p.includes(`write("user:${currentUserId}")`));
                 if (!hasCurrentUserWrite) {
@@ -129,7 +128,6 @@ export class Service {
                     updatedPermissions.push(Permission.read(Role.user(currentUserId)));
                 }
             }
-
 
             return await this.databases.updateDocument(
                 conf.appwriteDatabaseId,
@@ -142,24 +140,24 @@ export class Service {
                     status,
                     slug,
                     like,
-                    authorName, // Ensure authorName is included in the updated data
+                    authorName,
                 },
-                updatedPermissions // Pass the carefully updated permissions array
+                updatedPermissions
             );
         } catch (error) {
             console.error("Appwrite Service :: updatePost :: error", error);
-            throw error; // Re-throw to propagate the error
+            throw error;
         }
     }
 
     /**
      * Deletes a post document from Appwrite.
-     * Assumes slug is the document ID.
+     * Assumes documentId is the unique identifier for the document.
      *
      * @param {string} documentId - The ID of the document to delete.
      * @returns {Promise<boolean>} True if successful, false otherwise.
      */
-    async deletePost(documentId) { // Renamed parameter for clarity (it's the document ID being passed)
+    async deletePost(documentId) {
         try {
             await this.databases.deleteDocument(
                 conf.appwriteDatabaseId,
@@ -175,12 +173,12 @@ export class Service {
 
     /**
      * Retrieves a single post document from Appwrite.
-     * Assumes slug is the document ID.
+     * Assumes documentId is the unique identifier for the document.
      *
      * @param {string} documentId - The ID of the document to retrieve.
      * @returns {Promise<object|null>} The post document or null if not found/error.
      */
-    async getPost(documentId) { // Renamed parameter for clarity (it's the document ID being passed)
+    async getPost(documentId) {
         try {
             console.log("config.js (Service): Attempting to get post with ID:", documentId);
             const postDocument = await this.databases.getDocument(
@@ -208,19 +206,17 @@ export class Service {
         try {
             console.log("config.js (Service): Attempting to get posts with initial queries:", queries);
 
-            // Check if a limit query is already present
             const hasLimitQuery = queries.some(query => {
                 if (query instanceof Query) {
                     return query.method === 'limit';
                 }
-                // Fallback for non-Query objects, though ideally queries should be Query instances
                 const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
                 return queryStr.includes('"method":"limit"');
             });
 
             let finalQueries = [...queries];
             if (!hasLimitQuery) {
-                finalQueries.push(Query.limit(5000)); // Default limit to avoid fetching excessive data
+                finalQueries.push(Query.limit(5000));
             }
 
             console.log("config.js (Service): Final queries for listDocuments:", finalQueries);
@@ -234,7 +230,7 @@ export class Service {
             return response;
         } catch (error) {
             console.error("Appwrite Service :: getPosts :: error", error);
-            return { documents: [], total: 0 }; // Return consistent empty data on error
+            return { documents: [], total: 0 };
         }
     }
 
@@ -248,7 +244,7 @@ export class Service {
         try {
             return await this.bucket.createFile(
                 conf.appwriteBucketId,
-                ID.unique(), // Generate a unique ID for the file
+                ID.unique(),
                 file
             );
         } catch (error) {

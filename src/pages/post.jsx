@@ -1,9 +1,6 @@
-// src/pages/Post.jsx - SIMPLIFIED, relying on authorName being stored in the post document
-
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import appwriteService from "../appWrite/config";
-// No need to import authService here if authorName is stored with the post
 import { Button, Container } from "../components";
 import parse from "html-react-parser";
 import { useSelector } from "react-redux";
@@ -82,7 +79,7 @@ export default function Post() {
         fetchDataAndDetermineAuthor();
 
         if (authDataReady) {
-            refreshInterval = setInterval(fetchDataAndDetermineAuthor, REFRESH_INTERVAL_MS);
+                    refreshInterval = setInterval(fetchDataAndDetermineAuthor, REFRESH_INTERVAL_MS);
         }
 
         return () => {
@@ -91,7 +88,7 @@ export default function Post() {
                 clearInterval(refreshInterval);
             }
         };
-    }, [slug, navigate, authDataReady, userData]);
+    }, [slug, navigate, authDataReady, userData, post]);
 
     const deletePost = async () => {
         if (window.confirm("Are you sure you want to permanently delete this story? This action cannot be undone.")) {
@@ -112,7 +109,6 @@ export default function Post() {
         }
     };
 
-    // --- Loading State UI ---
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-950 text-white">
@@ -122,7 +118,6 @@ export default function Post() {
         );
     }
 
-    // --- Post Not Found / No Post Data UI ---
     if (!post) {
         return (
             <div className="w-full bg-gradient-to-br from-gray-950 to-black text-white min-h-screen py-16 flex items-center justify-center">
@@ -142,8 +137,6 @@ export default function Post() {
         );
     }
 
-    // This variable will now correctly use post.authorName if it exists, otherwise fall back.
-    // This assumes you've migrated old data or only creating new posts.
     const displayAuthorName = post.authorName || "An Author";
 
     const formatDate = (dateString) => {
@@ -211,10 +204,12 @@ export default function Post() {
                 </style>
                 {/* Main content box */}
                 <div className="relative bg-gray-900 rounded-3xl shadow-2xl p-6 md:p-10 lg:p-12 animate-fade-in
-                        border border-transparent hover:border-red-600 transition-all duration-500
-                        before:content-[''] before:absolute before:inset-0 before:rounded-3xl
-                        before:p-[2px] before:-z-10 before:bg-gradient-to-br before:from-red-600 before:via-purple-600 before:to-blue-600
-                        before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500 overflow-hidden">
+                        border border-transparent transition-all duration-500
+                        before:content-[''] before:absolute before:inset-[-2px] before:-z-10 before:rounded-3xl
+                        before:bg-gradient-to-br **before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500** {/* Adjusted to a slightly darker, richer gradient */}
+                        before:opacity-0 before:transition-opacity before:duration-500
+                        hover:before:opacity-100
+                        overflow-hidden">
 
                     {/* Like Button (Top-Right Corner of the main container) */}
                     <div className="absolute top-6 right-6 z-10">
@@ -230,17 +225,23 @@ export default function Post() {
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-8 lg:gap-12 relative">
-                        {/* Featured Image Section */}
+                        {/* Featured Image Section - UPDATED for 4:3 Aspect Ratio */}
                         <div className="w-full md:w-1/2 lg:w-2/5 relative rounded-2xl overflow-hidden shadow-2xl group animate-fadeInUpCustom
-                                transform transition-transform duration-500 hover:scale-[1.02] border border-gray-700">
+                                transform transition-transform duration-500 hover:scale-[1.02] border border-gray-700
+                                aspect-w-4 aspect-h-3">
                             {post.image ? (
                                 <img
                                     src={appwriteService.getFilePreview(post.image)}
                                     alt={post.title}
-                                    className="w-full h-[300px] md:h-[450px] object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                                    onLoad={(e) => e.target.classList.remove('opacity-0')}
+                                    onError={(e) => {
+                                        e.target.src = '/images/placeholder-image.jpg';
+                                        e.target.alt = 'Image failed to load';
+                                    }}
                                 />
                             ) : (
-                                <div className="w-full h-[300px] md:h-[450px] bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-semibold font-inter">
+                                <div className="w-full h-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-semibold font-inter">
                                     No Image Available
                                 </div>
                             )}
