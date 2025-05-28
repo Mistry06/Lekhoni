@@ -215,8 +215,9 @@ function TermsOfService() {
                         <li>
                             **By Email:** <a href="mailto:somnathkar612005@gmail.com" className="text-red-400 hover:underline">somnathkar612005@gmail.com</a>
                         </li>
-                        <li>
-                            **By Visiting Our Contact Page:** <a href="/contact" className="text-red-400 hover:underline">/contact</a>
+                       <li>
+                            {/* Corrected Link to Contact Page */}
+                            **By Visiting Our Contact Page:** <Link to="/contact" className="text-red-400 hover:underline">/contact</Link>
                         </li>
                     </ul>
 
