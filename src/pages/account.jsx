@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Query } from 'appwrite';
+import { Query } from 'appwrite'; // Ensure Query is imported
 import { LogoutBtn, Button, Input } from '../components';
 import authService from '../appWrite/auth';
-import appwriteService from '../appWrite/config';
+import appwriteService from '../appWrite/config'; // Make sure this path is correct
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout as logoutRedux } from '../store/authSlice';
@@ -15,7 +15,7 @@ import {
     EnvelopeIcon,
     CalendarDaysIcon,
     UserIcon,
-    ExclamationTriangleIcon // Import for the delete icon
+    ExclamationTriangleIcon
 } from '@heroicons/react/24/solid';
 
 const Container = ({ children }) => {
@@ -33,7 +33,6 @@ function Account() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    // --- State for Delete Account Pop-ups ---
     const [showConfirmDeletePopup, setShowConfirmDeletePopup] = useState(false);
     const [showPasswordPromptPopup, setShowPasswordPromptPopup] = useState(false);
     const [deleteConfirmPassword, setDeleteConfirmPassword] = useState('');
@@ -56,13 +55,21 @@ function Account() {
                 return;
             }
 
+            // --- DEBUGGING: Log user ID ---
+            console.log("Current User ID:", userAuthData.$id);
+
+            // Fetch ALL posts owned by the user, regardless of status
             const userOwnedPostsResponse = await appwriteService.getPosts([
                 Query.equal('userid', userAuthData.$id),
-                Query.limit(100)
+                Query.limit(5000) // IMPORTANT: Set a high limit to ensure you fetch all
             ]);
+
+            // --- DEBUGGING: Log response for user-owned posts ---
+            console.log("Response for user-owned posts:", userOwnedPostsResponse);
 
             if (userOwnedPostsResponse && userOwnedPostsResponse.documents) {
                 totalUserPostsCount = userOwnedPostsResponse.total;
+                console.log("Calculated totalUserPostsCount:", totalUserPostsCount); // Debugging: Check this count
                 userOwnedPostsResponse.documents.forEach(post => {
                     try {
                         const likedByUsers = post.like ? JSON.parse(post.like) : [];
@@ -75,9 +82,13 @@ function Account() {
                 });
             }
 
+            // Fetch ALL posts (active and inactive) to check for liked posts by current user
             const allPostsResponse = await appwriteService.getPosts([
-                Query.limit(100)
+                Query.limit(5000) // IMPORTANT: Set a high limit here too for counting liked posts
             ]);
+
+            // --- DEBUGGING: Log response for all posts ---
+            console.log("Response for all posts (for liked count):", allPostsResponse);
 
             if (allPostsResponse && allPostsResponse.documents) {
                 allPostsResponse.documents.forEach(post => {
@@ -123,7 +134,6 @@ function Account() {
         navigate('/edit-profile');
     };
 
-    // --- Delete Account Handlers ---
     const handleDeleteAccountClick = () => {
         setDeleteAccountError('');
         setShowConfirmDeletePopup(true);
@@ -152,15 +162,7 @@ function Account() {
         }
 
         try {
-            // ****** THIS IS THE CRITICAL FIX FOR THE APPWRITE SESSION ERROR ******
-            // Instead of authService.login(), which tries to create a new session,
-            // we use authService.updatePassword() to re-authenticate the existing session.
-            // By passing the same password for both newPassword and oldPassword, we verify
-            // the current credentials against the server without actually changing them.
             await authService.updatePassword(deleteConfirmPassword, deleteConfirmPassword);
-            // **********************************************************************
-
-            // Now, proceed with account deletion only after successful re-authentication
             await authService.deleteAccount();
 
             dispatch(logoutRedux());
@@ -179,8 +181,6 @@ function Account() {
             setShowPasswordPromptPopup(false);
         }
     };
-
-    // --- End Delete Account Handlers ---
 
     const {
         name: fullName,
@@ -222,20 +222,19 @@ function Account() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-950 to-black text-white font-inter py-10 sm:py-14 lg:py-16 relative flex flex-col">
-            {/* Embedded styles for custom fonts and animations */}
             <style>
                 {`
              /* src/index.css or src/App.css */
 
              @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600;700;800&display=swap');
-             
+
              .font-playfair {
                  font-family: 'Playfair Display', serif;
              }
              .font-inter {
                  font-family: 'Inter', sans-serif;
              }
-             
+
              /* Keep all your other global styles (like your custom animations @keyframes) here as well */
              .animate-fadeIn { /* ... */ }
              /* etc. */
@@ -385,22 +384,19 @@ function Account() {
             </style>
             <Container>
                 <div className="flex flex-col items-center bg-gray-800 p-8 md:p-12 rounded-2xl shadow-2xl border border-gray-700 animate-fade-in-up w-full max-w-4xl mx-auto flex-grow">
-                    {/* User Name and Logout button */}
                     <div className="w-full flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                         <h2 className="text-6xl md:text-7xl font-extrabold text-red-500 leading-tight glow-text-primary font-playfair text-center sm:text-left">
                             {fullName || "Guest User"}
                         </h2>
-                        {/* Logout Button: Apply the new custom class */}
                         <LogoutBtn className="
                             px-6 py-2.5 rounded-lg
                             text-base font-medium
                             shadow-sm
                             transition-all duration-300
-                            logout-button /* <-- THIS IS THE NEW CRUCIAL CHANGE */
+                            logout-button
                         " />
                     </div>
 
-                    {/* Basic User Info */}
                     <div className="w-full text-left mb-10 space-y-3">
                         {fullName && (
                             <p className="text-gray-300 text-2xl flex items-center gap-3">
@@ -419,36 +415,33 @@ function Account() {
                         )}
                     </div>
 
-                    {/* Section Divider and Title */}
                     <hr className="border-t border-gray-700 w-full mb-8" />
                     <p className="text-2xl text-gray-300 mb-10 w-full text-center font-playfair tracking-wide">Your Dashboard & Stats</p>
 
-                    {/* Stats (Posts Count, Liked Posts Count, and Total Likes on My Posts) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12 w-full">
                         {hasStats && (
                             <div className="flex flex-col items-center p-7 stat-card-gradient rounded-xl shadow-xl flex-1 transition-all duration-300 card-shadow-hover border border-gray-700 min-w-[180px]">
                                 <BookOpenIcon className="h-14 w-14 text-red-400 mb-4" />
                                 <p className="text-6xl font-bold text-red-500 mb-2">{totalPosts}</p>
-                                <p className="text-base text-gray-300 uppercase tracking-widest text-center">Your Stories</p>
+                                <p className="text-base text-gray-300 uppercase tracking-widest text-center">Your Posts</p>
                             </div>
                         )}
                         {hasLikedPostsStats && (
                             <div className="flex flex-col items-center p-7 stat-card-gradient rounded-xl shadow-xl flex-1 transition-all duration-300 card-shadow-hover border border-gray-700 min-w-[180px]">
                                 <HeartIcon className="h-14 w-14 text-red-400 mb-4" />
                                 <p className="text-6xl font-bold text-red-500 mb-2">{totalLikedPosts}</p>
-                                <p className="text-base text-gray-300 uppercase tracking-widest text-center">Stories You Liked</p>
+                                <p className="text-base text-gray-300 uppercase tracking-widest text-center">Posts You Liked</p>
                             </div>
                         )}
                         {hasTotalLikesOnMyPostsStats && (
                             <div className="flex flex-col items-center p-7 stat-card-gradient rounded-xl shadow-xl flex-1 transition-all duration-300 card-shadow-hover border border-gray-700 min-w-[180px]">
                                 <TrophyIcon className="h-14 w-14 text-red-400 mb-4" />
                                 <p className="text-6xl font-bold text-red-500 mb-2">{totalLikesOnMyPosts}</p>
-                                <p className="text-base text-gray-300 uppercase tracking-widest text-center">Total Likes on Your Stories</p>
+                                <p className="text-base text-gray-300 uppercase tracking-widest text-center">Total Likes on Your Posts</p>
                             </div>
                         )}
                     </div>
 
-                    {/* --- Action Buttons at the Bottom --- */}
                     <div className="w-full flex flex-col sm:flex-row justify-center gap-6 mt-auto pt-8 border-t border-gray-700">
                         <Button
                             onClick={handleEditProfile}
@@ -478,7 +471,6 @@ function Account() {
                     </div>
                 </div>
 
-                {/* --- Delete Confirmation Pop-up (Modal) --- */}
                 {showConfirmDeletePopup && (
                     <div className="modal-overlay">
                         <div className="modal-content">
@@ -505,7 +497,6 @@ function Account() {
                     </div>
                 )}
 
-                {/* --- Password Prompt Pop-up (Modal) --- */}
                 {showPasswordPromptPopup && (
                     <div className="modal-overlay">
                         <div className="modal-content">

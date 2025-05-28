@@ -1,14 +1,16 @@
+// src/pages/Post.jsx - SIMPLIFIED, relying on authorName being stored in the post document
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import appwriteService from "../appWrite/config";
-import { Button, Container } from "../components"; // Assuming Button is a custom component
+// No need to import authService here if authorName is stored with the post
+import { Button, Container } from "../components";
 import parse from "html-react-parser";
 import { useSelector } from "react-redux";
 import DOMPurify from 'dompurify';
 import LikeButtonComponent from '../components/LikeButtonComponent';
-import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/solid'; // Import icons
+import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/solid';
 
-// Refresh interval for post data (e.g., to see updated likes/comments)
 const REFRESH_INTERVAL_MS = 30 * 1000; // 30 seconds
 
 export default function Post() {
@@ -16,7 +18,7 @@ export default function Post() {
     const [loading, setLoading] = useState(true);
     const [isAuthor, setIsAuthor] = useState(false);
     const [authDataReady, setAuthDataReady] = useState(false);
-    const [mobileActionsOpen, setMobileActionsOpen] = useState(false); // New state for mobile action menu
+    const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
 
     const { slug } = useParams();
     const navigate = useNavigate();
@@ -92,7 +94,7 @@ export default function Post() {
     }, [slug, navigate, authDataReady, userData]);
 
     const deletePost = async () => {
-        if (window.confirm("Are you sure you want to permanently delete this story? This action cannot be undone.")) { // More explicit confirmation
+        if (window.confirm("Are you sure you want to permanently delete this story? This action cannot be undone.")) {
             try {
                 const status = await appwriteService.deletePost(post.$id);
                 if (status) {
@@ -140,6 +142,8 @@ export default function Post() {
         );
     }
 
+    // This variable will now correctly use post.authorName if it exists, otherwise fall back.
+    // This assumes you've migrated old data or only creating new posts.
     const displayAuthorName = post.authorName || "An Author";
 
     const formatDate = (dateString) => {
@@ -187,7 +191,7 @@ export default function Post() {
                     .story-divider {
                         height: 2px;
                         background: linear-gradient(to right, transparent, #555, transparent);
-                        margin: 1.5rem auto; /* Slightly increased margin for better visual separation */
+                        margin: 1.5rem auto;
                         animation: drawLine 1s ease-out forwards;
                         opacity: 0;
                         animation-delay: 0.5s;
@@ -201,7 +205,7 @@ export default function Post() {
                     .animate-content-fade-in {
                         animation: contentFadeIn 1.2s ease-out forwards;
                         opacity: 0;
-                        animation-delay: 0.7s; /* Delay after initial page load */
+                        animation-delay: 0.7s;
                     }
                     `}
                 </style>
