@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import appwriteService from "../appWrite/config";
 import { Button, Container } from "../components";
@@ -16,6 +16,7 @@ export default function Post() {
     const [isAuthor, setIsAuthor] = useState(false);
     const [authDataReady, setAuthDataReady] = useState(false);
     const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+    const mobileActionsRef = useRef(null);
 
     const { slug } = useParams();
     const navigate = useNavigate();
@@ -23,8 +24,40 @@ export default function Post() {
     const userData = useSelector((state) => state.auth.userData);
     const authStatus = useSelector((state) => state.auth.status);
 
+    // --- Start of LIKES related improvements ---
+    // Safely parse initialLikes and initialLikedByCurrentUser using useMemo
+    const likesCount = useMemo(() => {
+        // Ensure post and post.like exist before attempting to parse
+        if (!post || !post.like) {
+            return 0;
+        }
+        try {
+            const parsed = JSON.parse(post.like);
+            // Ensure parsed result is an array
+            return Array.isArray(parsed) ? parsed.length : 0;
+        } catch (e) {
+            console.error("Post.jsx: Error parsing post.like for count. Value:", post.like, "Error:", e);
+            return 0; // Default to 0 on parsing error
+        }
+    }, [post?.like]); // Dependency on post.like to recalculate when it changes
+
+    const likedByCurrentUser = useMemo(() => {
+        // Ensure user data, post, and post.like exist
+        if (!userData || !post || !post.like) {
+            return false;
+        }
+        try {
+            const parsed = JSON.parse(post.like);
+            // Ensure parsed result is an array and check for user ID
+            return Array.isArray(parsed) ? parsed.includes(userData.$id) : false;
+        } catch (e) {
+            console.error("Post.jsx: Error parsing post.like for current user check. Value:", post.like, "Error:", e);
+            return false; // Default to false on parsing error
+        }
+    }, [post?.like, userData?.$id]); // Dependencies on post.like and userData.$id
+    // --- End of LIKES related improvements ---
+
     useEffect(() => {
-        // Corrected variable name: currentAuthDataReady
         const currentAuthDataReady = authStatus !== undefined && (userData !== undefined);
         if (currentAuthDataReady !== authDataReady) {
             setAuthDataReady(currentAuthDataReady);
@@ -36,9 +69,7 @@ export default function Post() {
         let isMounted = true;
 
         const fetchDataAndDetermineAuthor = async () => {
-            if (!post) {
-                setLoading(true);
-            }
+            setLoading(true);
 
             if (!slug) {
                 console.error("Post.jsx: No story identifier (slug) provided in URL. Redirecting to all stories.");
@@ -53,7 +84,7 @@ export default function Post() {
                     if (isMounted) {
                         if (fetchedPost) {
                             setPost(fetchedPost);
-                            const currentIsAuthor = fetchedPost && userData ? fetchedPost.userid === userData.$id : false;
+                            const currentIsAuthor = fetchedPost.userid === userData?.$id;
                             setIsAuthor(currentIsAuthor);
                         } else {
                             console.warn(`Post.jsx: Story with identifier "${slug}" not found.`);
@@ -89,7 +120,20 @@ export default function Post() {
                 clearInterval(refreshInterval);
             }
         };
-    }, [slug, navigate, authDataReady, userData, post]);
+    }, [slug, navigate, authDataReady, userData]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (mobileActionsRef.current && !mobileActionsRef.current.contains(event.target)) {
+                setMobileActionsOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const deletePost = async () => {
         if (window.confirm("Are you sure you want to permanently delete this story? This action cannot be undone.")) {
@@ -119,6 +163,7 @@ export default function Post() {
         );
     }
 
+    // This block runs if post is null after loading (e.g., post not found)
     if (!post) {
         return (
             <div className="w-full bg-gradient-to-br from-gray-950 to-black text-white min-h-screen py-16 flex items-center justify-center">
@@ -201,26 +246,31 @@ export default function Post() {
                         opacity: 0;
                         animation-delay: 0.7s;
                     }
+                    @keyframes fadeInDown {
+                        from { opacity: 0; transform: translateY(-20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    .animate-fade-in-down {
+                        animation: fadeInDown 0.3s ease-out forwards;
+                    }
                     `}
                 </style>
                 {/* Main content box */}
                 <div className="relative bg-gray-900 rounded-3xl shadow-2xl p-6 md:p-10 lg:p-12 animate-fade-in
                         border border-transparent transition-all duration-500
                         before:content-[''] before:absolute before:inset-[-2px] before:-z-10 before:rounded-3xl
-                        before:bg-gradient-to-br before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500 {/* Updated to the slightly darker gradient */}
+                        before:bg-gradient-to-br before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500
                         before:opacity-0 before:transition-opacity before:duration-500
                         hover:before:opacity-100
                         overflow-hidden">
 
                     {/* Like Button (Top-Right Corner of the main container) */}
                     <div className="absolute top-6 right-6 z-10">
-                        {post && (
+                        {post && ( // Ensure post object exists before passing props
                             <LikeButtonComponent
                                 postId={post.$id}
-                                initialLikes={post.like ? JSON.parse(post.like).length : 0}
-                                initialLikedByCurrentUser={
-                                    userData && post.like && JSON.parse(post.like).includes(userData.$id)
-                                }
+                                initialLikes={likesCount} // Now uses the safely derived count
+                                initialLikedByCurrentUser={likedByCurrentUser} // Now uses the safely derived boolean
                             />
                         )}
                     </div>
@@ -237,8 +287,9 @@ export default function Post() {
                                     className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                                     onLoad={(e) => e.target.classList.remove('opacity-0')}
                                     onError={(e) => {
-                                        e.target.src = '/images/placeholder-image.jpg';
+                                        e.target.src = '/images/placeholder-image.jpg'; // Fallback image
                                         e.target.alt = 'Image failed to load';
+                                        console.error("Failed to load image for post:", post.$id);
                                     }}
                                 />
                             ) : (
@@ -270,7 +321,7 @@ export default function Post() {
 
                     {/* Author Name - Positioned right below the main content/image flexbox */}
                     <div className="w-full text-right text-lg text-gray-400 font-semibold italic animate-fade-in font-inter mt-6 pr-4">
-                        —  <span className="text-red-400">{displayAuthorName}</span>
+                        — <span className="text-red-400">{displayAuthorName}</span>
                     </div>
 
                     {/* Horizontal Line below author name and above buttons/dates */}
@@ -283,16 +334,13 @@ export default function Post() {
                             {post.$createdAt && (
                                 <>
                                     Published: <span className="text-red-400">{formatDate(post.$createdAt)}</span>
-                                    {/* {post.$updatedAt && post.$updatedAt !== post.$createdAt && (
-                                        <span className="ml-4">Updated: <span className="text-red-400">{formatDate(post.$updatedAt)}</span></span>
-                                    )} */}
                                 </>
                             )}
                         </div>
 
                         {/* Right side: Author Action Buttons - Responsive */}
                         {isAuthor && (
-                            <div className="relative flex items-center gap-4 w-full sm:w-auto justify-end">
+                            <div className="relative flex items-center gap-4 w-full sm:w-auto justify-end" ref={mobileActionsRef}>
                                 {/* Desktop/Tablet Buttons */}
                                 <div className="hidden sm:flex flex-row items-center gap-4">
                                     <Link to={`/edit-post/${post.$id}`}>
@@ -310,27 +358,24 @@ export default function Post() {
                                     </Button>
                                 </div>
 
-                                {/* Mobile Actions Button (Hamburger/Ellipsis) */}
+                                {/* Mobile Actions Button (Ellipsis) */}
                                 <div className="sm:hidden">
                                     <button
                                         onClick={() => setMobileActionsOpen(!mobileActionsOpen)}
                                         className="text-white focus:outline-none p-2 rounded-md hover:bg-gray-700 transition-colors"
                                     >
-                                        {/* <EllipsisVerticalIcon className="h-6 w-6 text-red-500" /> */}
+                                        <EllipsisVerticalIcon className="h-6 w-6 text-red-500" />
                                     </button>
                                 </div>
 
                                 {/* Mobile Dropdown Menu for Actions */}
                                 {mobileActionsOpen && (
                                     <div className="sm:hidden absolute bottom-full right-0 mb-2 w-48 bg-gray-800 rounded-lg shadow-lg py-2 z-20 animate-fade-in-down">
-                                        {/*
                                         <Link to={`/edit-post/${post.$id}`} onClick={() => setMobileActionsOpen(false)}>
                                             <div className="flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 cursor-pointer">
                                                 <PencilSquareIcon className="h-5 w-5 mr-2" /> Refine
                                             </div>
                                         </Link>
-                                        */}
-                                        {/*
                                         <div
                                             onClick={() => {
                                                 deletePost();
@@ -340,7 +385,6 @@ export default function Post() {
                                         >
                                             <TrashIcon className="h-5 w-5 mr-2" /> Delete
                                         </div>
-                                        */}
                                     </div>
                                 )}
                             </div>

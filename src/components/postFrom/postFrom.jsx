@@ -2,123 +2,174 @@
 
 import React, { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, Select, RTE } from '../index'; // Assuming index.js correctly exports these
-import appwriteService from '../../appWrite/config'; // Assumes config.js is correct
+import { Button, Input, Select, RTE } from '../index';
+import appwriteService from '../../appWrite/config';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
-// PostForm now accepts 'post' (for editing) and 'userData' (for defaulting author name)
-// The 'authorName' prop is no longer passed explicitly from AddPost.jsx
-// Instead, PostForm will use 'userData' from Redux for default and allow user input.
-function PostForm({ post }) { // Removed authorName prop
+function PostForm({ post }) {
     const navigate = useNavigate();
-    const userData = useSelector((state) => state.auth.userData); // Get userData directly
+    const userData = useSelector((state) => state.auth.userData);
 
     const { register, handleSubmit, watch, setValue, control, getValues, formState: { errors } } = useForm({
         defaultValues: {
             title: post?.title || '',
-            // For editing, use post.$id as the slug. For new posts, it's empty initially.
+            // For existing posts, use the current $id for the slug field, otherwise empty.
+            // Note: The slug is typically the document ID in Appwrite for posts.
             slug: post?.$id || '',
             content: post?.content || '',
             status: post?.status || 'active',
-            // Default authorName: existing post's author, OR current user's name/email, OR empty string
-            authorName: post?.authorName || userData?.name || userData?.email || '', // NEW DEFAULT
+            // Pre-fill authorName from post data, or user data, or leave empty for user input
+            authorName: post?.authorName || userData?.name || userData?.email || '',
+            // Initialize 'like' as a parsed array if it exists and is valid JSON, otherwise an empty array.
+            // This is for internal form state; it will be stringified before saving to Appwrite.
+            like: post?.like ? JSON.parse(post.like || '[]') : [],
         },
     });
 
     const submit = async (data) => {
+        // --- Critical Check: Ensure user data is available ---
+        if (!userData || !userData.$id) {
+            console.error("PostForm: User not authenticated or user ID unavailable. Cannot create/update post.");
+            alert("You need to be logged in to perform this action.");
+            navigate("/login"); // Redirect to login if user data is missing
+            return;
+        }
+
         // Determine the final author name to save.
-        // It prioritizes the value from the form input (`data.authorName`).
-        // If the input is empty, it falls back to the logged-in user's name/email.
-        // As a last resort, it uses "Anonymous".
+        // Prioritize user input, then Redux user's name, then email, then 'Anonymous'.
         const finalAuthorName = data.authorName || userData?.name || userData?.email || "Anonymous";
 
         if (post) {
             // Scenario: Updating an existing post
             let fileId = post.image; // Start with the existing image ID
 
+            // Handle new image upload during update
             if (data.image && data.image[0]) {
-                // A new image was selected
-                const file = await appwriteService.uploadFile(data.image[0]);
-                if (file) {
-                    fileId = file.$id;
-                    // If there was an old image, delete it
-                    if (post.image) {
-                        await appwriteService.deleteFile(post.image);
+                try {
+                    const file = await appwriteService.uploadFile(data.image[0]);
+                    if (file) {
+                        fileId = file.$id;
+                        // If there was an old image, delete it
+                        if (post.image) {
+                            await appwriteService.deleteFile(post.image);
+                        }
+                    } else {
+                        console.error("PostForm: Failed to upload new image during post update. Service returned no file.");
+                        alert("Failed to upload new image. Keeping old image if exists. Please try again.");
                     }
-                } else {
-                    console.error("Failed to upload new image during post update. Keeping old image if exists.");
+                } catch (error) {
+                    console.error("PostForm: Error uploading new image during post update:", error);
+                    alert(`Error uploading new image: ${error.message || 'Unknown error'}. Post update will continue with old image if exists.`);
                 }
-            } else if (data.image === null && post.image) {
-                // If the user explicitly cleared the image (e.g., if you add a clear button)
-                // For now, if data.image is empty but post.image exists, we just keep post.image
-                // unless you have a mechanism to explicitly remove it.
-                // Assuming "data.image" will be empty array if no new file selected, not null.
-                // If you want to allow removal, you'd add a "clear image" button.
-                // For now, if no new image is provided, the old one remains.
+            } else if (post.image && !data.image[0]) {
+                 // Case: User explicitly removed the image by not providing a new one
+                 // This effectively means removing the image from the post if it was previously there.
+                 // Only set fileId to null if the image is NOT required for updates in your Appwrite schema.
+                 // If it IS required for updates, you might need to handle this differently (e.g., prevent removal).
+                 // For now, it will proceed to update with fileId = null, which would cause an error
+                 // if `image` is required on update. Your `isImageRequiredForUpdate` flag will catch this.
+                 // console.warn("PostForm: User did not provide a new image for an existing post. Old image will be removed if no new image is selected and schema allows.");
+                 fileId = null; // Set to null if image is optional and not provided, effectively removing it.
             }
 
 
+            // Prepare data for update.
+            // Note: `data.like` is already an array here due to `defaultValues` parsing.
+            // It needs to be stringified before sending to Appwrite.
             const dataToUpdate = {
                 title: data.title,
                 content: data.content,
                 image: fileId, // Use the new fileId or the existing one
                 status: data.status,
-                authorName: finalAuthorName, // Use the determined authorName from input/fallback
-                like: post.like || "[]", // Ensure likes are carried over on update
+                authorName: finalAuthorName,
+                // Stringify the 'like' array before sending to Appwrite's JSON attribute
+                like: JSON.stringify(data.like || []),
             };
 
-            const dbPost = await appwriteService.updatePost(post.$id, dataToUpdate);
-
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`);
-            } else {
-                alert("Failed to update post.");
+            // Validate if image is required for updates based on Appwrite schema
+            // Replace `false` with `true` if your Appwrite 'image' attribute is required for updates
+            const isImageRequiredForUpdate = false;
+            if (isImageRequiredForUpdate && !fileId) {
+                alert("Cannot update post: A featured image is required.");
+                return; // Abort update if image is required and missing
             }
+
+            try {
+                const dbPost = await appwriteService.updatePost(post.$id, dataToUpdate);
+
+                if (dbPost) {
+                    navigate(`/post/${dbPost.$id}`);
+                } else {
+                    alert("Failed to update post. No response from service.");
+                }
+            } catch (error) {
+                console.error("PostForm: Error updating post in DB:", error);
+                alert(`Error updating post: ${error.message || 'Unknown error'}`);
+            }
+
         } else {
             // Scenario: Creating a new post
-            if (!userData || !userData.$id) {
-                console.error("User not authenticated or user ID unavailable. Cannot create post.");
-                alert("Please log in to create a post.");
-                navigate("/login");
-                return;
-            }
 
             let fileId = null;
+            // Check if a file was provided and if it's valid
             if (data.image && data.image[0]) {
-                const file = await appwriteService.uploadFile(data.image[0]);
-                if (file) {
-                    fileId = file.$id;
-                } else {
-                    console.error("Failed to upload image during post creation. Post might be created without image.");
+                try {
+                    const file = await appwriteService.uploadFile(data.image[0]);
+                    if (file) {
+                        fileId = file.$id;
+                    } else {
+                        // This block means uploadFile successfully completed but returned null/undefined (unlikely for Appwrite SDK)
+                        console.error("PostForm: Failed to upload image for new post. Service returned no file.");
+                        alert("Failed to upload image. Please ensure the image is valid and try again.");
+                        return; // Stop execution if upload failed
+                    }
+                } catch (error) {
+                    // This block means uploadFile threw an error
+                    console.error("PostForm: Error during file upload for new post:", error);
+                    alert(`Error uploading image: ${error.message || 'Unknown error'}. Please try again.`);
+                    return; // Stop execution if upload threw an error
                 }
             }
+
+            // --- CRITICAL FIX START ---
+            // If we are creating a new post AND the image is required (which it is by `required: !post`),
+            // AND we still don't have a valid `fileId` after trying to upload,
+            // then we MUST stop here and inform the user.
+            if (!fileId) { // This handles cases where no file was selected OR upload failed
+                alert("Please select a featured image. It is required for new posts.");
+                return; // Stop execution if no image was successfully provided and it's required
+            }
+            // --- CRITICAL FIX END ---
 
             const newPostData = {
                 title: data.title,
                 content: data.content,
-                image: fileId, // Use the uploaded fileId or null
+                image: fileId, // This will now always be a valid file ID due to the check above
                 status: data.status,
                 userid: userData.$id, // The ID of the currently logged-in user
-                authorName: finalAuthorName, // Use the determined authorName from input/fallback
-                like: "[]", // Initialize likes as an empty JSON array string for new posts
+                authorName: finalAuthorName,
+                like: JSON.stringify([]), // Initialize likes as an empty JSON array string for new posts
+                slug: data.slug, // Ensure slug is also included here as it's part of the data for createPost
             };
 
-            // Assuming appwriteService.createPost expects the document ID as the second argument
-            // or automatically generates one if not provided.
-            // If you intend for the slug to be the document ID, pass it here.
-            // If Appwrite handles doc ID, just pass newPostData.
-            const dbPost = await appwriteService.createPost(newPostData, data.slug); // Pass data.slug as document ID
+            try {
+                const dbPost = await appwriteService.createPost(newPostData);
 
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`);
-            } else {
-                alert("Failed to create post.");
+                console.log("PostForm: Create post to DB result:", dbPost);
+
+                if (dbPost) {
+                    navigate(`/post/${dbPost.$id}`);
+                } else {
+                    alert("Failed to create post. No response from service.");
+                }
+            } catch (error) {
+                console.error("PostForm: Error creating post in DB:", error);
+                alert(`Error creating post: ${error.message || 'Unknown error'}`);
             }
         }
     };
 
-    // Slug transformation logic remains the same
     const slugTransform = useCallback((name) => {
         if (name && typeof name === 'string')
             return name
@@ -132,8 +183,8 @@ function PostForm({ post }) { // Removed authorName prop
     useEffect(() => {
         const subscription = watch((value, { name }) => {
             if (name === 'title') {
-                // Only auto-generate slug if it's a new post (not editing)
-                // or if the slug field is currently empty.
+                // Only auto-generate slug if it's a new post (no `post` object)
+                // or if the slug field is currently empty (allowing manual override).
                 if (!post || getValues('slug') === '') {
                     setValue('slug', slugTransform(value.title), { shouldValidate: true });
                 }
@@ -141,7 +192,7 @@ function PostForm({ post }) { // Removed authorName prop
         });
 
         return () => subscription.unsubscribe();
-    }, [watch, slugTransform, setValue, post, getValues]); // Added post and getValues to dependencies
+    }, [watch, slugTransform, setValue, post, getValues]);
 
     return (
         <form onSubmit={handleSubmit(submit)} className="flex flex-wrap -mx-2">
@@ -167,20 +218,18 @@ function PostForm({ post }) { // Removed authorName prop
                 />
                 {errors.slug && <p className="text-red-400 text-sm mt-1">Slug is required.</p>}
 
-                {/* NEW AUTHOR NAME INPUT FIELD */}
                 <Input
                     label="Author Name :"
                     placeholder="Your Name or Pseudonym"
                     className="mb-4 bg-gray-800 text-white border-gray-700 focus:border-red-600 focus:ring-red-600"
                     {...register('authorName', {
                         maxLength: {
-                            value: 100, // Ensure this matches your Appwrite attribute size
+                            value: 100,
                             message: "Author name cannot exceed 100 characters."
                         }
                     })}
                 />
                 {errors.authorName && <p className="text-red-400 text-sm mt-1">{errors.authorName.message}</p>}
-
 
                 <RTE label="Content :" name="content" control={control} defaultValue={getValues("content")} />
             </div>
@@ -192,6 +241,7 @@ function PostForm({ post }) { // Removed authorName prop
                     accept="image/png, image/jpg, image/jpeg, image/gif"
                     {...register("image", { required: !post })} // Image is required only for new posts
                 />
+                {/* Display image required error only if it's a new post AND the error exists */}
                 {errors.image && !post && <p className="text-red-400 text-sm mt-1">Featured image is required for new posts.</p>}
 
                 {post && post.image && (
@@ -212,7 +262,7 @@ function PostForm({ post }) { // Removed authorName prop
                 {errors.status && <p className="text-red-400 text-sm mt-1">Status is required.</p>}
 
                 <Button type="submit"
-                        className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
+                    className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
                     {post ? "Update Post" : "Submit Post"}
                 </Button>
             </div>

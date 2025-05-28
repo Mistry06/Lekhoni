@@ -1,5 +1,4 @@
-// appWrite/config.js
-import conf from "../conf/conf.js";
+import conf from "../conf/conf.js"; // Assuming conf.js holds your Appwrite project configs
 import { Client, ID, Databases, Storage, Query } from "appwrite";
 
 export class Service {
@@ -15,42 +14,64 @@ export class Service {
         this.bucket = new Storage(this.client);
     }
 
-    async createPost({ title, slug, content, image, status, userid }) {
+    // Method to create a new post document in Appwrite
+    async createPost({ title, slug, content, image, status, userid, authorName, like }) { 
         try {
             return await this.databases.createDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                slug,
+                slug, // Using slug as document ID
                 {
                     title,
                     content,
-                    image,
+                    image, // <--- This MUST be present and a valid file ID
                     status,
                     userid,
-                    like: "[]",
+                    authorName,
+                    like,
                 }
             );
         } catch (error) {
-            console.error("Appwrite Service :: createPost :: error", error);
+            console.log("Appwrite service :: createPost :: error", error);
             throw error;
         }
     }
-
-    async updatePost(documentId, data, permissions = undefined) {
+    // Method to update an existing post document
+    async updatePost(slug, { title, content, image, status, authorName, like /* This is now an array from LikeButtonComponent */ }) {
         try {
+            // *** IMPORTANT: Stringify the 'like' array before sending to Appwrite ***
+            const dataToSend = {
+                title,
+                content,
+                image,
+                status,
+                authorName,
+                // Ensure 'like' is always a JSON string for Appwrite's string attribute
+                like: JSON.stringify(like || []), // Stringify the array, default to empty array if null/undefined
+            };
+
+            // Filter out undefined values if they cause issues with Appwrite partial updates
+            // (Appwrite updateDocument is usually good with partial updates, but it's good practice)
+            Object.keys(dataToSend).forEach(key => {
+                if (dataToSend[key] === undefined) {
+                    delete dataToSend[key];
+                }
+            });
+
+
             return await this.databases.updateDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                documentId,
-                data,
-                permissions
+                slug,
+                dataToSend
             );
         } catch (error) {
-            console.error("Appwrite Service :: updatePost :: error", error);
+            console.error("Appwrite service :: updatePost :: error", error);
             throw error;
         }
     }
 
+    // Method to delete a post document
     async deletePost(slug) {
         try {
             await this.databases.deleteDocument(
@@ -65,6 +86,7 @@ export class Service {
         }
     }
 
+    // Method to get a single post document by its slug (ID)
     async getPost(slug) {
         try {
             console.log("config.js (Service): Attempting to get post with slug:", slug);
@@ -77,74 +99,43 @@ export class Service {
             return postDocument;
         } catch (error) {
             console.error("config.js (Service): Error getting post:", error);
-            return null;
+            return null; // Return null instead of false for consistency and easier checks
         }
     }
 
-    // REVISED getPosts METHOD:
-    // This now checks for 'status' within the string representation of the query
-    // which is more robust if the objects are not pure Appwrite Query instances.
+    // Method to get a list of posts with optional queries (e.g., filter by status)
     async getPosts(queries = []) {
         try {
-            console.log("config.js (Service): Attempting to get posts with initial queries:", queries);
-
-            let effectiveQueries = [...queries];
-
-            // A more robust way to check if a status query is present,
-            // considering that queries might be stringified or plain objects.
-            const hasExplicitStatusQuery = queries.some(query => {
-                // If it's an Appwrite Query object instance (ideal case)
-                if (query instanceof Query) {
-                    // Check if it's an 'equal' query for status
-                    if (query.attribute === 'status') return true;
-                    // Check if it's an 'or' query and contains status sub-queries
-                    if (query.method === 'or' && Array.isArray(query.values)) {
-                        return query.values.some(subQuery => subQuery.attribute === 'status');
-                    }
-                }
-                // If it's a plain object or stringified, check its string representation
-                const queryStr = typeof query === 'string' ? query : JSON.stringify(query);
-                return queryStr.includes('"attribute":"status"') || queryStr.includes('status');
-            });
-
-
-            if (!hasExplicitStatusQuery) {
-                // If no status query was explicitly provided by the caller, default to 'active'.
-                effectiveQueries.push(Query.equal("status", "active"));
-                console.log("config.js (Service): No explicit status query provided, defaulting to 'active'.");
-            } else {
-                console.log("config.js (Service): Explicit status query provided by caller, respecting it.");
-            }
-
-            console.log("config.js (Service): Final queries for listDocuments:", effectiveQueries);
-
+            // Always add a query to filter for active posts
+            queries.push(Query.equal("status", "active"));
             const response = await this.databases.listDocuments(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                effectiveQueries
+                queries
             );
-            console.log("config.js (Service): Successfully got posts:", response);
+            // console.log("Appwrite response:", response); // Uncomment for debugging list response
             return response;
         } catch (error) {
             console.error("Appwrite Service :: getPosts :: error", error);
-            return null;
+            return null; // Return null on error
         }
     }
 
-
+    // Method to upload a file to Appwrite Storage
     async uploadFile(file) {
         try {
             return await this.bucket.createFile(
                 conf.appwriteBucketId,
-                ID.unique(),
+                ID.unique(), // Use Appwrite's unique ID generator for file IDs
                 file
             );
         } catch (error) {
             console.error("Appwrite Service :: uploadFile :: error", error);
-            return false;
+            return false; // Return false on error
         }
     }
 
+    // Method to delete a file from Appwrite Storage
     async deleteFile(fileId) {
         try {
             await this.bucket.deleteFile(conf.appwriteBucketId, fileId);
@@ -155,16 +146,19 @@ export class Service {
         }
     }
 
+    // Method to get a public URL for a file preview (direct download URL)
     getFilePreview(fileId) {
         if (!fileId) {
             console.error("Error: File ID is required for preview.");
             return null;
         }
         try {
+            // Using getFileDownload to get the direct URL for an image
             const imageUrl = this.bucket.getFileDownload(
                 conf.appwriteBucketId,
                 fileId
             );
+            // console.log("Generated Image Download URL (via SDK):", imageUrl); // Uncomment for debugging
             return imageUrl;
         } catch (error) {
             console.error("Appwrite Service :: getFileDownload :: error", error);
