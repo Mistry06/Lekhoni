@@ -15,14 +15,18 @@ export class Service {
         this.bucket = new Storage(this.client);
     }
 
+    // ---
+    // ## createPost Method Fix
+    // ---
     async createPost({ title, slug, content, image, status, userid }) {
         try {
             return await this.databases.createDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                slug,
+                ID.unique(), // FIX: Use ID.unique() for the documentId
                 {
                     title,
+                    slug, // Include slug in the data payload if you want to store it
                     content,
                     image,
                     status,

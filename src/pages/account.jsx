@@ -152,11 +152,15 @@ function Account() {
         }
 
         try {
-            await authService.login({
-                email: userData.email,
-                password: deleteConfirmPassword
-            });
+            // ****** THIS IS THE CRITICAL FIX FOR THE APPWRITE SESSION ERROR ******
+            // Instead of authService.login(), which tries to create a new session,
+            // we use authService.updatePassword() to re-authenticate the existing session.
+            // By passing the same password for both newPassword and oldPassword, we verify
+            // the current credentials against the server without actually changing them.
+            await authService.updatePassword(deleteConfirmPassword, deleteConfirmPassword);
+            // **********************************************************************
 
+            // Now, proceed with account deletion only after successful re-authentication
             await authService.deleteAccount();
 
             dispatch(logoutRedux());
@@ -235,149 +239,149 @@ function Account() {
              /* Keep all your other global styles (like your custom animations @keyframes) here as well */
              .animate-fadeIn { /* ... */ }
              /* etc. */
-                .animate-fade-in-up {
-                    animation: fadeInUp 0.7s ease-out forwards;
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                @keyframes fadeInUp {
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                .glow-text-primary {
-                    text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.6);
-                }
-                .card-shadow-hover:hover {
-                    transform: translateY(-8px) scale(1.02);
-                    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.6);
-                    border-color: #ef4444;
-                }
-                .stat-card-gradient {
-                    background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-                }
+                 .animate-fade-in-up {
+                     animation: fadeInUp 0.7s ease-out forwards;
+                     opacity: 0;
+                     transform: translateY(20px);
+                 }
+                 @keyframes fadeInUp {
+                     to {
+                         opacity: 1;
+                         transform: translateY(0);
+                     }
+                 }
+                 .glow-text-primary {
+                     text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.6);
+                 }
+                 .card-shadow-hover:hover {
+                     transform: translateY(-8px) scale(1.02);
+                     box-shadow: 0 18px 36px rgba(0, 0, 0, 0.6);
+                     border-color: #ef4444;
+                 }
+                 .stat-card-gradient {
+                     background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+                 }
 
-                /* Custom CSS for Delete Account Button for highest specificity */
-                .delete-account-button {
-                    background-color: #4b5563 !important; /* Gray-600 */
-                    color: #d1d5db !important; /* Gray-300 */
-                    border: 1px solid #6b7280 !important; /* Gray-500 */
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Subtle shadow */
-                }
-                .delete-account-button:hover {
-                    background-color: #dc2626 !important; /* Red-600 on hover */
-                    color: white !important;
-                    border-color: #ef4444 !important; /* Red-500 border on hover */
-                    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important; /* More prominent shadow on hover */
-                }
+                 /* Custom CSS for Delete Account Button for highest specificity */
+                 .delete-account-button {
+                     background-color: #4b5563 !important; /* Gray-600 */
+                     color: #d1d5db !important; /* Gray-300 */
+                     border: 1px solid #6b7280 !important; /* Gray-500 */
+                     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+                 }
+                 .delete-account-button:hover {
+                     background-color: #dc2626 !important; /* Red-600 on hover */
+                     color: white !important;
+                     border-color: #ef4444 !important; /* Red-500 border on hover */
+                     box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4) !important; /* More prominent shadow on hover */
+                 }
 
-                /* Custom CSS for Logout Button for highest specificity */
-                .logout-button {
-                    background-color: #f3f4f6 !important; /* Gray-100 */
-                    color: #1f2937 !important; /* Gray-900 */
-                    border: 1px solid #d1d5db !important; /* Gray-300 */
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important; /* Subtle shadow */
-                }
-                .logout-button:hover {
-                    background-color: #e5e7eb !important; /* Gray-200 on hover */
-                    color: #000000 !important; /* Black on hover for contrast */
-                    border-color: #9ca3af !important; /* Gray-400 border on hover */
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; /* Slightly more prominent shadow on hover */
-                }
+                 /* Custom CSS for Logout Button for highest specificity */
+                 .logout-button {
+                     background-color: #f3f4f6 !important; /* Gray-100 */
+                     color: #1f2937 !important; /* Gray-900 */
+                     border: 1px solid #d1d5db !important; /* Gray-300 */
+                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important; /* Subtle shadow */
+                 }
+                 .logout-button:hover {
+                     background-color: #e5e7eb !important; /* Gray-200 on hover */
+                     color: #000000 !important; /* Black on hover for contrast */
+                     border-color: #9ca3af !important; /* Gray-400 border on hover */
+                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; /* Slightly more prominent shadow on hover */
+                 }
 
-                /* Modal Specific Styles */
-                .modal-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background-color: rgba(0, 0, 0, 0.8);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 1000;
-                    backdrop-filter: blur(8px);
-                }
-                .modal-content {
-                    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-                    padding: 3rem;
-                    border-radius: 1.5rem;
-                    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
-                    text-align: center;
-                    max-width: 500px;
-                    width: 90%;
-                    border: 1px solid #444;
-                    position: relative;
-                }
-                .modal-title {
-                    font-family: 'Playfair Display', serif;
-                    font-weight: 700;
-                    color: #ef4444;
-                    font-size: 2.5rem;
-                    margin-bottom: 1.25rem;
-                    text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
-                }
-                .modal-message {
-                    font-family: 'Inter', sans-serif;
-                    color: #d1d5db;
-                    font-size: 1.2rem;
-                    margin-bottom: 1.75rem;
-                    line-height: 1.5;
-                }
-                .modal-input {
-                    background-color: #1f2937;
-                    border: 1px solid #4b5563;
-                    color: #f9fafb;
-                    padding: 1rem 1.25rem;
-                    border-radius: 0.75rem;
-                    width: 100%;
-                    font-size: 1.1rem;
-                    margin-bottom: 1.25rem;
-                    transition: all 0.2s;
-                }
-                .modal-input:focus {
-                    outline: none;
-                    border-color: #ef4444;
-                    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4);
-                }
-                .modal-button {
-                    padding: 0.9rem 1.8rem;
-                    border-radius: 0.6rem;
-                    font-weight: 700;
-                    transition: all 0.2s;
-                    min-width: 120px;
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .modal-button-danger {
-                    background-color: #dc2626;
-                    color: white;
-                    border: 1px solid #ef4444;
-                }
-                .modal-button-danger:hover {
-                    background-color: #b91c1c;
-                    box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
-                }
-                .modal-button-secondary {
-                    background-color: #4b5563;
-                    color: white;
-                    border: 1px solid #6b7280;
-                }
-                .modal-button-secondary:hover {
-                    background-color: #374151;
-                    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-                }
-                .modal-error {
-                    color: #fca5a5;
-                    font-size: 1rem;
-                    margin-top: 0.75rem;
-                    margin-bottom: 1.25rem;
-                    font-weight: 600;
-                }
-                `}
+                 /* Modal Specific Styles */
+                 .modal-overlay {
+                     position: fixed;
+                     top: 0;
+                     left: 0;
+                     right: 0;
+                     bottom: 0;
+                     background-color: rgba(0, 0, 0, 0.8);
+                     display: flex;
+                     justify-content: center;
+                     align-items: center;
+                     z-index: 1000;
+                     backdrop-filter: blur(8px);
+                 }
+                 .modal-content {
+                     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+                     padding: 3rem;
+                     border-radius: 1.5rem;
+                     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+                     text-align: center;
+                     max-width: 500px;
+                     width: 90%;
+                     border: 1px solid #444;
+                     position: relative;
+                 }
+                 .modal-title {
+                     font-family: 'Playfair Display', serif;
+                     font-weight: 700;
+                     color: #ef4444;
+                     font-size: 2.5rem;
+                     margin-bottom: 1.25rem;
+                     text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+                 }
+                 .modal-message {
+                     font-family: 'Inter', sans-serif;
+                     color: #d1d5db;
+                     font-size: 1.2rem;
+                     margin-bottom: 1.75rem;
+                     line-height: 1.5;
+                 }
+                 .modal-input {
+                     background-color: #1f2937;
+                     border: 1px solid #4b5563;
+                     color: #f9fafb;
+                     padding: 1rem 1.25rem;
+                     border-radius: 0.75rem;
+                     width: 100%;
+                     font-size: 1.1rem;
+                     margin-bottom: 1.25rem;
+                     transition: all 0.2s;
+                 }
+                 .modal-input:focus {
+                     outline: none;
+                     border-color: #ef4444;
+                     box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4);
+                 }
+                 .modal-button {
+                     padding: 0.9rem 1.8rem;
+                     border-radius: 0.6rem;
+                     font-weight: 700;
+                     transition: all 0.2s;
+                     min-width: 120px;
+                     display: inline-flex;
+                     align-items: center;
+                     justify-content: center;
+                 }
+                 .modal-button-danger {
+                     background-color: #dc2626;
+                     color: white;
+                     border: 1px solid #ef4444;
+                 }
+                 .modal-button-danger:hover {
+                     background-color: #b91c1c;
+                     box-shadow: 0 5px 15px rgba(220, 38, 38, 0.4);
+                 }
+                 .modal-button-secondary {
+                     background-color: #4b5563;
+                     color: white;
+                     border: 1px solid #6b7280;
+                 }
+                 .modal-button-secondary:hover {
+                     background-color: #374151;
+                     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                 }
+                 .modal-error {
+                     color: #fca5a5;
+                     font-size: 1rem;
+                     margin-top: 0.75rem;
+                     margin-bottom: 1.25rem;
+                     font-weight: 600;
+                 }
+                 `}
             </style>
             <Container>
                 <div className="flex flex-col items-center bg-gray-800 p-8 md:p-12 rounded-2xl shadow-2xl border border-gray-700 animate-fade-in-up w-full max-w-4xl mx-auto flex-grow">
