@@ -24,6 +24,7 @@ export default function Post() {
     const authStatus = useSelector((state) => state.auth.status);
 
     useEffect(() => {
+        // Corrected variable name: currentAuthDataReady
         const currentAuthDataReady = authStatus !== undefined && (userData !== undefined);
         if (currentAuthDataReady !== authDataReady) {
             setAuthDataReady(currentAuthDataReady);
@@ -206,7 +207,7 @@ export default function Post() {
                 <div className="relative bg-gray-900 rounded-3xl shadow-2xl p-6 md:p-10 lg:p-12 animate-fade-in
                         border border-transparent transition-all duration-500
                         before:content-[''] before:absolute before:inset-[-2px] before:-z-10 before:rounded-3xl
-                        before:bg-gradient-to-br **before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500** {/* Adjusted to a slightly darker, richer gradient */}
+                        before:bg-gradient-to-br **before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500** {/* Updated to the slightly darker gradient */}
                         before:opacity-0 before:transition-opacity before:duration-500
                         hover:before:opacity-100
                         overflow-hidden">
