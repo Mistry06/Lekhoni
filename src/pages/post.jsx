@@ -270,7 +270,7 @@ export default function Post() {
 
                     {/* Author Name - Positioned right below the main content/image flexbox */}
                     <div className="w-full text-right text-lg text-gray-400 font-semibold italic animate-fade-in font-inter mt-6 pr-4">
-                        — By <span className="text-red-400">{displayAuthorName}</span>
+                        —  <span className="text-red-400">{displayAuthorName}</span>
                     </div>
 
                     {/* Horizontal Line below author name and above buttons/dates */}
@@ -283,9 +283,9 @@ export default function Post() {
                             {post.$createdAt && (
                                 <>
                                     Published: <span className="text-red-400">{formatDate(post.$createdAt)}</span>
-                                    {post.$updatedAt && post.$updatedAt !== post.$createdAt && (
+                                    {/* {post.$updatedAt && post.$updatedAt !== post.$createdAt && (
                                         <span className="ml-4">Updated: <span className="text-red-400">{formatDate(post.$updatedAt)}</span></span>
-                                    )}
+                                    )} */}
                                 </>
                             )}
                         </div>

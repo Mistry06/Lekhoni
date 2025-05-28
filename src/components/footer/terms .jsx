@@ -204,21 +204,8 @@ function TermsOfService() {
                         </li>
                     </ul>
 
-                    {/* Contact Us */}
-                    <h3 className="text-3xl sm:text-4xl font-bold text-white mb-4 font-playfair pt-6">
-                        10. Contact Us
-                    </h3>
-                    <p className="text-lg sm:text-xl leading-relaxed mb-4">
-                        For any questions regarding these Terms, please contact us:
-                    </p>
-                    <ul className="list-disc list-inside text-lg sm:text-xl space-y-2 pl-5 leading-relaxed">
-                        <li>
-                            **By Email:** <a href="mailto:somnathkar612005@gmail.com" className="text-red-400 hover:underline">somnathkar612005@gmail.com</a>
-                        </li>
-                        <li>
-                            **By Visiting Our Contact Page:** <a href="/contact" className="text-red-400 hover:underline">/contact</a>
-                        </li>
-                    </ul>
+                    
+                   
 
                     {/* Last Updated Date - IMPORTANT for legal documents */}
                     <p className="text-sm text-gray-500 mt-12 text-right">

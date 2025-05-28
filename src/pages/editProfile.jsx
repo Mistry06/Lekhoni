@@ -262,7 +262,7 @@ function EditProfile() {
                     {/* Header */}
                     <div className="w-full flex justify-between items-center mb-6">
                         <Button
-                            onClick={() => navigate('/acccount')}
+                            onClick={() => navigate("/account")}
                             className="px-4 py-2 rounded-lg bg-gray-600 text-white flex items-center gap-2 hover:bg-gray-700 transition-colors"
                         >
                             <ArrowLeftIcon className="h-5 w-5" /> Back to Account

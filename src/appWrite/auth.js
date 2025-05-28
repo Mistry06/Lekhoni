@@ -1,5 +1,5 @@
 import { Client, Account, ID } from 'appwrite';
-import conf from '../conf/conf'; // Assuming conf.js holds your Appwrite project ID and URL
+import conf from '../conf/conf';
 
 export class AuthService {
     client = new Client();
@@ -21,7 +21,6 @@ export class AuthService {
                 name
             );
             if (userAccount) {
-                // call another method
                 return this.login({ email, password });
             } else {
                 return userAccount;
@@ -46,7 +45,7 @@ export class AuthService {
             return await this.account.get();
         } catch (error) {
             console.log("Appwrite service :: getCurrentUser :: error", error);
-            return null; // Return null if no user is logged in or an error occurs
+            return null;
         }
     }
 
@@ -68,26 +67,29 @@ export class AuthService {
         }
     }
 
-    // ****** FIX FOR "Identity not found" error ******
-    // IMPORTANT: This only deletes all active sessions for the user,
-    // effectively logging them out everywhere.
-    // IT DOES NOT delete the user's record from the Appwrite database itself.
-    // For full user record deletion, you need to use Appwrite Cloud Functions
-    // with the Admin SDK (`users.deleteUser(userId)`).
     async deleteAccount() {
         try {
-            // Re-authentication already handled in Account.jsx via updatePassword
-            // Now, delete all sessions for the current user.
             await this.account.deleteSessions();
-            return true; // Indicate success for the client-side operation
+            return true;
         } catch (error) {
             console.log("Appwrite service :: deleteAccount :: error", error);
             throw new Error(`Failed to log out all sessions for account deletion: ${error.message}`);
         }
     }
-    // *************************************************
+
+    // This is the method you recently added and should be present only once
+    async updateName(newName) {
+        try {
+            return await this.account.updateName(newName);
+        } catch (error) {
+            console.log("Appwrite service :: updateName :: error", error);
+            throw error;
+        }
+    }
 }
 
+// Instantiate the service ONCE
 const authService = new AuthService();
 
+// Export the single instance as the default export
 export default authService;

@@ -96,12 +96,9 @@ const router = createBrowserRouter([
                 element:<PrivacyPolicy/>
             },
             {
-                path:'/account',
-                element: (
-                    <Protected authentication>
-                        <Account />
-                    </Protected>
-                )
+                path: "/account",
+        element: <Account />,
+                
             },
             {
                 path: '/edit-profile',
