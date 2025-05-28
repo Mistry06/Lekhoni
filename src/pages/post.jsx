@@ -80,7 +80,7 @@ export default function Post() {
         fetchDataAndDetermineAuthor();
 
         if (authDataReady) {
-                    refreshInterval = setInterval(fetchDataAndDetermineAuthor, REFRESH_INTERVAL_MS);
+            refreshInterval = setInterval(fetchDataAndDetermineAuthor, REFRESH_INTERVAL_MS);
         }
 
         return () => {
@@ -207,7 +207,7 @@ export default function Post() {
                 <div className="relative bg-gray-900 rounded-3xl shadow-2xl p-6 md:p-10 lg:p-12 animate-fade-in
                         border border-transparent transition-all duration-500
                         before:content-[''] before:absolute before:inset-[-2px] before:-z-10 before:rounded-3xl
-                        before:bg-gradient-to-br **before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500** {/* Updated to the slightly darker gradient */}
+                        before:bg-gradient-to-br before:from-fuchsia-600 before:via-purple-600 before:via-blue-600 before:via-cyan-500 before:via-emerald-500 before:to-yellow-500 {/* Updated to the slightly darker gradient */}
                         before:opacity-0 before:transition-opacity before:duration-500
                         hover:before:opacity-100
                         overflow-hidden">
@@ -316,18 +316,21 @@ export default function Post() {
                                         onClick={() => setMobileActionsOpen(!mobileActionsOpen)}
                                         className="text-white focus:outline-none p-2 rounded-md hover:bg-gray-700 transition-colors"
                                     >
-                                        <EllipsisVerticalIcon className="h-6 w-6 text-red-500" />
+                                        {/* <EllipsisVerticalIcon className="h-6 w-6 text-red-500" /> */}
                                     </button>
                                 </div>
 
                                 {/* Mobile Dropdown Menu for Actions */}
                                 {mobileActionsOpen && (
                                     <div className="sm:hidden absolute bottom-full right-0 mb-2 w-48 bg-gray-800 rounded-lg shadow-lg py-2 z-20 animate-fade-in-down">
+                                        {/*
                                         <Link to={`/edit-post/${post.$id}`} onClick={() => setMobileActionsOpen(false)}>
                                             <div className="flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors duration-200 cursor-pointer">
                                                 <PencilSquareIcon className="h-5 w-5 mr-2" /> Refine
                                             </div>
                                         </Link>
+                                        */}
+                                        {/*
                                         <div
                                             onClick={() => {
                                                 deletePost();
@@ -337,6 +340,7 @@ export default function Post() {
                                         >
                                             <TrashIcon className="h-5 w-5 mr-2" /> Delete
                                         </div>
+                                        */}
                                     </div>
                                 )}
                             </div>

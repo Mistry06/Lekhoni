@@ -12,15 +12,16 @@ import AllPosts from './pages/allPosts.jsx';
 import AddPost from './pages/addPost.jsx';
 import EditPost from './pages/editPost.jsx';
 import Post from './pages/post.jsx';
-import Protected from './components/authLayout.jsx'; // Import the new component
+import Protected from './components/authLayout.jsx';
 
-// --- Corrected Imports ---
-// Ensure these paths exactly match your file names, including case and no extra spaces
+// --- VERIFY THESE PATHS CAREFULLY ---
+// Make sure 'about.jsx', 'contact.jsx', 'terms.jsx', 'privacy.jsx'
+// actually exist in 'src/components/footer/' with these exact names.
 import About from './components/footer/about.jsx';
-import Contact from './components/footer/contact.jsx';
+import Contact from './components/footer/contact.jsx'; // <-- THIS IMPORT MUST MATCH YOUR FILENAME
 import TermsOfService from './components/footer/terms .jsx';
 import PrivacyPolicy from './components/footer/private.jsx'
-// --- End Corrected Imports ---
+// --- END VERIFICATION ---
 
 import Account from './pages/account.jsx';
 import EditProfile from './pages/editProfile.jsx';
@@ -83,7 +84,7 @@ const router = createBrowserRouter([
                 element:<About/>
             },
             {
-                path:'/contact',
+                path:'/contact', // <-- THIS ROUTE IS CORRECTLY DEFINED
                 element:<Contact/>
             },
             {
@@ -95,7 +96,7 @@ const router = createBrowserRouter([
                 element:<PrivacyPolicy/>
             },
             {
-                path:'/account', // CORRECTED PATH FROM '//acccount'
+                path:'/account',
                 element: (
                     <Protected authentication>
                         <Account />
