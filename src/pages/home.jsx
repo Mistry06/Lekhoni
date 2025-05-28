@@ -86,7 +86,8 @@ function Home() {
 
     if (!authStatus) {
         return (
-            <div className="relative w-full min-h-screen flex items-center justify-center text-white overflow-hidden bg-gradient-to-br from-gray-950 to-black">
+            // FIX: Removed `**` from `home-background-unauthenticated`
+            <div className="relative w-full min-h-screen flex items-center justify-center text-white overflow-hidden bg-gradient-to-br from-gray-950 to-black home-background-unauthenticated">
                 <style>
                     {`
                     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600;700;800&display=swap');
@@ -107,7 +108,7 @@ function Home() {
                     }
                     @keyframes slideInRight {
                         from { opacity: 0; transform: translateX(50px); }
-                        to { opacity: 1; transform: translateX(0); }
+                        to { transform: translateX(0); }
                     }
 
                     .animate-fade-in { animation: fadeIn 1s ease-out forwards; }
@@ -117,6 +118,31 @@ function Home() {
                     .drop-shadow-3xl {
                         filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
                     }
+
+                    /* Unauthenticated Background */
+                    .home-background-unauthenticated {
+                        background-image: url('https://img.freepik.com/premium-photo/feather-quill-resting-open-book-symbolizing-knowledge-literature_854605-14821.jpg');
+                        background-size: cover;
+                        background-position: center;
+                        background-repeat: no-repeat;
+                        background-attachment: fixed; /* Keeps background fixed during scroll */
+                    }
+                    /* Add a subtle overlay to improve text readability */
+                    .home-background-unauthenticated::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.6); /* Dark overlay */
+                        z-index: 1; /* Ensure overlay is behind content but above image */
+                    }
+                    /* Ensure content is above the overlay */
+                    .home-background-unauthenticated > .container {
+                        position: relative;
+                        z-index: 2;
+                    }
                     `}
                 </style>
                 <Container className="text-center py-20 px-4">
@@ -124,7 +150,8 @@ function Home() {
                     Unleash Your Creativity.
                     </div>
                     <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-medium animate-fade-in font-inter">
-                    The blank page awaits your brilliance. Start writing, inspire others, and build a portfolio of your thoughts that resonates globally.                    </p>
+                    The blank page awaits your brilliance. Start writing, inspire others, and build a portfolio of your thoughts that resonates globally.
+                    </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4 animate-slide-in-right">
                         <Link
                             to="/login"
@@ -151,20 +178,20 @@ function Home() {
         <div className="relative w-full min-h-screen text-white overflow-hidden py-10 bg-gradient-to-br from-gray-950 to-black">
             <style>
                 {`
-               /* src/index.css or src/App.css */
+                /* src/index.css or src/App.css */
 
-               @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600;700;800&display=swap');
-               
-               .font-playfair {
-                   font-family: 'Playfair Display', serif;
-               }
-               .font-inter {
-                   font-family: 'Inter', sans-serif;
-               }
-               
-               /* Keep all your other global styles (like your custom animations @keyframes) here as well */
-               .animate-fadeIn { /* ... */ }
-               /* etc. */
+                @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;600;700;800&display=swap');
+
+                .font-playfair {
+                    font-family: 'Playfair Display', serif;
+                }
+                .font-inter {
+                    font-family: 'Inter', sans-serif;
+                }
+
+                /* Keep all your other global styles (like your custom animations @keyframes) here as well */
+                .animate-fadeIn { /* ... */ }
+                /* etc. */
 
                 /* General Fade In */
                 @keyframes fadeIn {
@@ -288,7 +315,7 @@ function Home() {
                 /* Featured Post Content (Title, Text, Button) Fade In */
                 @keyframes contentFadeIn {
                     from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    to { transform: translateY(0); opacity: 1; }
                 }
                 .animate-content-fade-in {
                     animation: contentFadeIn 0.7s ease-out forwards;

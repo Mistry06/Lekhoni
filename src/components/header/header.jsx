@@ -20,17 +20,18 @@ function Header() {
 
     return (
         <header className="py-4 shadow-2xl bg-gray-950 sticky top-0 z-50 transition-all duration-300">
-         
+           
                 <div className="flex w-full justify-between items-center">
                     {/* Left Section: Logo and Brand Name */}
                     <div className="flex items-center gap-2">
                         <Link to="/">
                             <Logo
-                                width="70px"
-                                className="h-auto transition-transform duration-300 hover:scale-105 filter brightness-[1.8] contrast-125 rounded-none"
+                                width="70px" // Adjusted width for the image logo
+                                className="h-auto transition-transform duration-300 hover:scale-105 filter brightness-[1.8] contrast-125 rounded-none" // Image specific styles
                             />
                         </Link>
-                        <div className="text-red-600 text-3xl md:text-4xl font-extrabold font-serif tracking-tight drop-shadow-md transition-colors duration-300 hover:text-red-400 cursor-pointer">
+                        {/* "Lekhoni" text (separate from logo image) */}
+                        <div className="text-red-600 text-3xl md:text-4xl font-extrabold font-serif tracking-tight drop-shadow-md transition-colors duration-300 hover:text-red-400 cursor-pointer mt-4">
                             Lekhoni
                         </div>
                     </div>
@@ -90,7 +91,7 @@ function Header() {
                         )}
                     </div>
                 </div>
-           
+         
 
             {/* Mobile Menu Content (conditionally rendered) */}
             {authStatus && mobileMenuOpen && (
