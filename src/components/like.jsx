@@ -69,14 +69,14 @@ function useLikeFunctionality(initialLikes = 0, initialLikedByCurrentUser = fals
             const newLikesCount = newLikedByUsersArray.length;
 
             // 2. Update the post in Appwrite with the new 'like' string
-            const updatedPost = await appwriteService.updatePost(
-                postId,
-                {
-                    like: JSON.stringify(newLikedByUsersArray), // Update the 'like' string attribute
-                },
-                undefined // Explicitly pass undefined for permissions
-            );
-
+           // In like.jsx
+const updatedPost = await appwriteService.updatePost(
+    postId,
+    {
+        like: JSON.stringify(newLikedByUsersArray), // <-- Already stringified here!
+    },
+    undefined
+);
             if (updatedPost) {
                 // 3. Update local state if Appwrite update was successful
                 setLikes(newLikesCount);

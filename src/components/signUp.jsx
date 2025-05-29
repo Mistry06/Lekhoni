@@ -11,26 +11,77 @@ import '../App.css'; // Adjust path if your CSS file is elsewhere, e.g., '../ani
 
 function Signup() {
     const navigate = useNavigate();
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false); // New loading state
+    const [mainError, setMainError] = useState(""); // Renamed 'error' to 'mainError' for clarity
+    const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
-    const { register, handleSubmit, formState: { errors } } = useForm(); // Destructure errors from formState
+    const { register, handleSubmit, formState: { errors } } = useForm();
+
+    // New states for email verification message and JWT handling
+    const [emailVerificationMessage, setEmailVerificationMessage] = useState("");
+    const [obtainedJwt, setObtainedJwt] = useState(null);
+    const [jwtGenerationError, setJwtGenerationError] = useState(null);
 
     const create = async (data) => {
-        setError(""); // Clear previous errors
+        setMainError(""); // Clear previous main errors
+        setEmailVerificationMessage(""); // Clear previous verification messages
+        setJwtGenerationError(""); // Clear previous JWT errors
+        setObtainedJwt(null); // Clear previous JWT
         setLoading(true); // Set loading true on submission
+
         try {
+            // 1. Create the user account in Appwrite
             const userData = await authService.createAccount(data);
+
             if (userData) {
+                // 2. Get current user data to update Redux store (important if auto-login occurs)
                 const currentUserData = await authService.getCurrentUser();
                 if (currentUserData) {
-                    dispatch(login(currentUserData));
-                    navigate("/"); // Navigate to home on successful login
+                    dispatch(login(currentUserData)); // Update Redux store with current user data
+
+                    // 3. Send the email verification link
+                    // IMPORTANT: Ensure this URL matches what you configured in your Appwrite Console
+                    // For development: 'http://localhost:3000/verify-email'
+                    // For production: 'https://your-domain.com/verify-email'
+                    try {
+                        await authService.sendVerificationEmail('http://localhost:3000/verify-email');
+                        setEmailVerificationMessage("A verification email has been sent to your inbox. Please click the link to verify your account!");
+                    } catch (verificationError) {
+                        console.error("Failed to send verification email:", verificationError);
+                        setEmailVerificationMessage("Account created, but failed to send verification email. You can request it later from your profile.");
+                    }
+
+                    // 4. Immediately obtain a JWT for the newly created/logged-in session
+                    // This JWT can be sent to your custom "own service" for authorization.
+                    try {
+                        const jwtResponse = await authService.createJwtForSession();
+                        setObtainedJwt(jwtResponse.jwt);
+                        console.log("JWT obtained after signup:", jwtResponse.jwt);
+                        // --- IMPORTANT: This is where you'd typically make an API call to your custom service ---
+                        // Example:
+                        // await yourCustomServiceApi.post('/user-registered', {
+                        //     userId: currentUserData.$id,
+                        //     email: currentUserData.email,
+                        //     name: currentUserData.name
+                        // }, {
+                        //     headers: { Authorization: `Bearer ${jwtResponse.jwt}` }
+                        // });
+                        // console.log("Data sent to custom service with JWT.");
+
+                    } catch (jwtErr) {
+                        console.error("Error generating JWT after signup:", jwtErr);
+                        setJwtGenerationError("Account created, but an authorization token for your custom service could not be generated.");
+                    }
+
+                    // 5. Navigate the user after all immediate post-signup actions
+                    // You might want to navigate to a "check your email" page or directly home
+                    navigate("/"); // Navigate to home on successful login/signup completion
+                } else {
+                    setMainError("Account created, but could not retrieve current user data. Please try logging in.");
                 }
             }
-        } catch (error) {
-            // Display specific error message from Appwrite or a generic one
-            setError(error.message || "An unexpected error occurred during signup.");
+        } catch (err) {
+            // Catch errors from createAccount
+            setMainError(err.message || "An unexpected error occurred during signup.");
         } finally {
             setLoading(false); // Set loading false after operation completes
         }
@@ -59,12 +110,28 @@ function Signup() {
                     </Link>
                 </p>
 
-                {/* General error message for backend issues */}
-                {error && (
+                {/* Display messages/errors */}
+                {mainError && (
                     <p className="text-red-300 text-sm mt-6 text-center font-medium bg-red-900 bg-opacity-70 p-3 rounded-md animate-error-shake animate-error-fade">
-                        {error}
+                        {mainError}
                     </p>
                 )}
+                {emailVerificationMessage && (
+                    <p className="text-blue-300 text-sm mt-4 text-center font-medium bg-blue-900 bg-opacity-70 p-3 rounded-md">
+                        {emailVerificationMessage}
+                    </p>
+                )}
+                {jwtGenerationError && (
+                    <p className="text-orange-300 text-sm mt-4 text-center font-medium bg-orange-900 bg-opacity-70 p-3 rounded-md">
+                        {jwtGenerationError}
+                    </p>
+                )}
+                {obtainedJwt && (
+                    <p className="text-green-300 text-sm mt-4 text-center font-medium bg-green-900 bg-opacity-70 p-3 rounded-md break-all">
+                        Authorization token generated! (DEBUG: {obtainedJwt.substring(0, 50)}...)
+                    </p>
+                )}
+
 
                 <form onSubmit={handleSubmit(create)} className="mt-8">
                     <div className='space-y-6'>

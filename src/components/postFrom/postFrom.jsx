@@ -14,11 +14,9 @@ function PostForm({ post }) {
     const { register, handleSubmit, watch, setValue, control, getValues, formState: { errors } } = useForm({
         defaultValues: {
             title: post?.title || '',
-            // For existing posts, use the current $id for the slug field, otherwise empty.
-            // Note: The slug is typically the document ID in Appwrite for posts.
-            slug: post?.$id || '',
+            // Removed slug from defaultValues as it's no longer a user-editable field
             content: post?.content || '',
-            status: post?.status || 'active',
+            status: post?.status || 'public',
             // Pre-fill authorName from post data, or user data, or leave empty for user input
             authorName: post?.authorName || userData?.name || userData?.email || '',
             // Initialize 'like' as a parsed array if it exists and is valid JSON, otherwise an empty array.
@@ -40,63 +38,61 @@ function PostForm({ post }) {
         // Prioritize user input, then Redux user's name, then email, then 'Anonymous'.
         const finalAuthorName = data.authorName || userData?.name || userData?.email || "Anonymous";
 
+        // Handle image upload/retention logic outside of the if/else for update/create
+        let fileId = null; // Will hold the new or existing file ID
+
+        if (data.image && data.image[0]) { // A new image file was selected (for either create or update)
+            try {
+                const uploadedFile = await appwriteService.uploadFile(data.image[0]);
+                if (uploadedFile) {
+                    fileId = uploadedFile.$id;
+                    // If updating, and a new image was uploaded, delete the old one
+                    if (post && post.image) {
+                        await appwriteService.deleteFile(post.image);
+                    }
+                } else {
+                    console.error("PostForm: Failed to upload image. Service returned no file.");
+                    alert("Failed to upload image. Please ensure the image is valid and try again.");
+                    return; // Stop submission if new image upload fails
+                }
+            } catch (error) {
+                console.error("PostForm: Error during file upload:", error);
+                alert(`Error uploading image: ${error.message || 'Unknown error'}. Please try again.`);
+                return; // Stop submission if upload threw an error
+            }
+        } else if (post && post.image) {
+            // No new image selected, but this is an UPDATE scenario and an old image exists.
+            // Retain the old image's file ID.
+            fileId = post.image;
+        } else if (!post) {
+            // New post creation, but no image was selected.
+            // This case is handled by the `required: !post` validation on the input.
+            // If validation passes (i.e., image was selected for new post), fileId will be set above.
+            // If validation fails (no image for new post), handleSubmit won't even call `submit`.
+            // However, adding an explicit check here as a fail-safe:
+            if (!fileId && !post) { // If it's a new post AND no image was successfully processed
+                console.error("PostForm: Image is required for new posts but was not provided.");
+                alert("Please select a featured image. It is required for new posts.");
+                return;
+            }
+        }
+
+        // Prepare common data object for both create and update
+        const postData = {
+            title: data.title,
+            content: data.content,
+            image: fileId, // This is now correctly handled for all scenarios
+            status: data.status,
+            authorName: finalAuthorName,
+            // Stringify the 'like' array before sending to Appwrite's JSON attribute
+            like: JSON.stringify(data.like || []),
+        };
+
         if (post) {
             // Scenario: Updating an existing post
-            let fileId = post.image; // Start with the existing image ID
-
-            // Handle new image upload during update
-            if (data.image && data.image[0]) {
-                try {
-                    const file = await appwriteService.uploadFile(data.image[0]);
-                    if (file) {
-                        fileId = file.$id;
-                        // If there was an old image, delete it
-                        if (post.image) {
-                            await appwriteService.deleteFile(post.image);
-                        }
-                    } else {
-                        console.error("PostForm: Failed to upload new image during post update. Service returned no file.");
-                        alert("Failed to upload new image. Keeping old image if exists. Please try again.");
-                    }
-                } catch (error) {
-                    console.error("PostForm: Error uploading new image during post update:", error);
-                    alert(`Error uploading new image: ${error.message || 'Unknown error'}. Post update will continue with old image if exists.`);
-                }
-            } else if (post.image && !data.image[0]) {
-                 // Case: User explicitly removed the image by not providing a new one
-                 // This effectively means removing the image from the post if it was previously there.
-                 // Only set fileId to null if the image is NOT required for updates in your Appwrite schema.
-                 // If it IS required for updates, you might need to handle this differently (e.g., prevent removal).
-                 // For now, it will proceed to update with fileId = null, which would cause an error
-                 // if `image` is required on update. Your `isImageRequiredForUpdate` flag will catch this.
-                 // console.warn("PostForm: User did not provide a new image for an existing post. Old image will be removed if no new image is selected and schema allows.");
-                 fileId = null; // Set to null if image is optional and not provided, effectively removing it.
-            }
-
-
-            // Prepare data for update.
-            // Note: `data.like` is already an array here due to `defaultValues` parsing.
-            // It needs to be stringified before sending to Appwrite.
-            const dataToUpdate = {
-                title: data.title,
-                content: data.content,
-                image: fileId, // Use the new fileId or the existing one
-                status: data.status,
-                authorName: finalAuthorName,
-                // Stringify the 'like' array before sending to Appwrite's JSON attribute
-                like: JSON.stringify(data.like || []),
-            };
-
-            // Validate if image is required for updates based on Appwrite schema
-            // Replace `false` with `true` if your Appwrite 'image' attribute is required for updates
-            const isImageRequiredForUpdate = false;
-            if (isImageRequiredForUpdate && !fileId) {
-                alert("Cannot update post: A featured image is required.");
-                return; // Abort update if image is required and missing
-            }
-
             try {
-                const dbPost = await appwriteService.updatePost(post.$id, dataToUpdate);
+                // When updating, we use the existing post's $id (which is the random ID now)
+                const dbPost = await appwriteService.updatePost(post.$id, postData);
 
                 if (dbPost) {
                     navigate(`/post/${dbPost.$id}`);
@@ -110,56 +106,21 @@ function PostForm({ post }) {
 
         } else {
             // Scenario: Creating a new post
-
-            let fileId = null;
-            // Check if a file was provided and if it's valid
-            if (data.image && data.image[0]) {
-                try {
-                    const file = await appwriteService.uploadFile(data.image[0]);
-                    if (file) {
-                        fileId = file.$id;
-                    } else {
-                        // This block means uploadFile successfully completed but returned null/undefined (unlikely for Appwrite SDK)
-                        console.error("PostForm: Failed to upload image for new post. Service returned no file.");
-                        alert("Failed to upload image. Please ensure the image is valid and try again.");
-                        return; // Stop execution if upload failed
-                    }
-                } catch (error) {
-                    // This block means uploadFile threw an error
-                    console.error("PostForm: Error during file upload for new post:", error);
-                    alert(`Error uploading image: ${error.message || 'Unknown error'}. Please try again.`);
-                    return; // Stop execution if upload threw an error
-                }
-            }
-
-            // --- CRITICAL FIX START ---
-            // If we are creating a new post AND the image is required (which it is by `required: !post`),
-            // AND we still don't have a valid `fileId` after trying to upload,
-            // then we MUST stop here and inform the user.
-            if (!fileId) { // This handles cases where no file was selected OR upload failed
-                alert("Please select a featured image. It is required for new posts.");
-                return; // Stop execution if no image was successfully provided and it's required
-            }
-            // --- CRITICAL FIX END ---
-
-            const newPostData = {
-                title: data.title,
-                content: data.content,
-                image: fileId, // This will now always be a valid file ID due to the check above
-                status: data.status,
+            // For new posts, ensure userid is included. Slug will be handled by appwriteService.createPost with ID.unique().
+            const newPostCompleteData = {
+                ...postData,
                 userid: userData.$id, // The ID of the currently logged-in user
-                authorName: finalAuthorName,
-                like: JSON.stringify([]), // Initialize likes as an empty JSON array string for new posts
-                slug: data.slug, // Ensure slug is also included here as it's part of the data for createPost
+                // Removed 'slug' from here as it will be generated randomly by Appwrite now
             };
 
             try {
-                const dbPost = await appwriteService.createPost(newPostData);
+                // Call createPost without passing a slug; Appwrite will generate a unique ID
+                const dbPost = await appwriteService.createPost(newPostCompleteData);
 
                 console.log("PostForm: Create post to DB result:", dbPost);
 
                 if (dbPost) {
-                    navigate(`/post/${dbPost.$id}`);
+                    navigate(`/post/${dbPost.$id}`); // Navigate using the new random $id
                 } else {
                     alert("Failed to create post. No response from service.");
                 }
@@ -170,29 +131,10 @@ function PostForm({ post }) {
         }
     };
 
-    const slugTransform = useCallback((name) => {
-        if (name && typeof name === 'string')
-            return name
-                .trim()
-                .toLowerCase()
-                .replace(/[^a-zA-Z\d\s]+/g, "-")
-                .replace(/\s/g, "-");
-        return '';
-    }, []);
-
-    useEffect(() => {
-        const subscription = watch((value, { name }) => {
-            if (name === 'title') {
-                // Only auto-generate slug if it's a new post (no `post` object)
-                // or if the slug field is currently empty (allowing manual override).
-                if (!post || getValues('slug') === '') {
-                    setValue('slug', slugTransform(value.title), { shouldValidate: true });
-                }
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [watch, slugTransform, setValue, post, getValues]);
+    // slugTransform and its useEffect are removed as the slug field is no longer user-visible/generated from title.
+    // If you later decide you still need a human-readable slug as a *separate attribute*
+    // (distinct from the Appwrite document ID), you would re-add a variation of slugTransform
+    // and include 'slug' in the 'newPostCompleteData' object.
 
     return (
         <form onSubmit={handleSubmit(submit)} className="flex flex-wrap -mx-2">
@@ -205,18 +147,7 @@ function PostForm({ post }) {
                 />
                 {errors.title && <p className="text-red-400 text-sm mt-1">Title is required.</p>}
 
-                <Input
-                    label="Slug :"
-                    placeholder="Slug"
-                    className="mb-4 bg-gray-800 text-white border-gray-700 focus:border-red-600 focus:ring-red-600"
-                    {...register("slug", { required: true })}
-                    onInput={(e) => {
-                        setValue("slug", slugTransform(e.currentTarget.value), { shouldValidate: true });
-                    }}
-                    // Slug is only disabled if we are editing an existing post
-                    disabled={post ? true : false}
-                />
-                {errors.slug && <p className="text-red-400 text-sm mt-1">Slug is required.</p>}
+                {/* Removed the Slug Input field */}
 
                 <Input
                     label="Author Name :"
@@ -241,7 +172,6 @@ function PostForm({ post }) {
                     accept="image/png, image/jpg, image/jpeg, image/gif"
                     {...register("image", { required: !post })} // Image is required only for new posts
                 />
-                {/* Display image required error only if it's a new post AND the error exists */}
                 {errors.image && !post && <p className="text-red-400 text-sm mt-1">Featured image is required for new posts.</p>}
 
                 {post && post.image && (
@@ -254,7 +184,7 @@ function PostForm({ post }) {
                     </div>
                 )}
                 <Select
-                    options={["active", "inactive"]}
+                    options={["Public", "Private"]}
                     label="Status"
                     className="mb-4 bg-gray-800 text-white border-gray-700 focus:border-red-600 focus:ring-red-600"
                     {...register("status", { required: true })}

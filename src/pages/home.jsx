@@ -10,7 +10,7 @@ import { Query } from 'appwrite'; // Ensure Appwrite SDK Query is imported
 import '../App.css'; // Assuming this holds any global custom keyframes not defined here
 
 function Home() {
-    const [allActivePosts, setAllActivePosts] = useState([]); // Holds ALL active posts fetched
+    const [allActivePosts, setAllActivePosts] = useState([]); // Holds ALL public posts fetched
     const [featuredPostsSubset, setFeaturedPostsSubset] = useState([]); // Holds up to 5 random posts for the featured section
     const authStatus = useSelector((state) => state.auth.status);
     const [loading, setLoading] = useState(true);
@@ -19,19 +19,19 @@ function Home() {
     useEffect(() => {
         setLoading(true);
         if (authStatus) {
-            appwriteService.getPosts([Query.equal("status", "active")])
+            appwriteService.getPosts([Query.equal("status", "public")])
                 .then((fetchedPosts) => {
                     if (fetchedPosts) {
-                        const activePosts = fetchedPosts.documents;
-                        setAllActivePosts(activePosts); // Store all fetched active posts
+                        const publicPosts = fetchedPosts.documents;
+                        setAllActivePosts(publicPosts); // Store all fetched public posts
 
-                        // --- Debugging Log: Check all active posts for image IDs ---
-                        console.log("All Active Posts (with image IDs):", activePosts.map(p => ({ title: p.title, image: p.image, $id: p.$id })));
+                        // --- Debugging Log: Check all public posts for image IDs ---
+                        console.log("All Active Posts (with image IDs):", publicPosts.map(p => ({ title: p.title, image: p.image, $id: p.$id })));
                         // --- End Debugging Log ---
 
                         // --- Logic for selecting up to 5 random posts for Featured Section ---
                         // Create a shallow copy to shuffle without modifying the original fetched array
-                        const shuffledPosts = [...activePosts].sort(() => 0.5 - Math.random());
+                        const shuffledPosts = [...publicPosts].sort(() => 0.5 - Math.random());
                         const selectedForFeatured = shuffledPosts.slice(0, 5); // Pick up to 5 random posts
                         setFeaturedPostsSubset(selectedForFeatured);
 
@@ -448,7 +448,7 @@ function Home() {
                         {featuredPostsSubset.length > 0 && <div className="my-20"></div>}
 
 
-                        {/* All Posts Section - Now displays ALL active posts */}
+                        {/* All Posts Section - Now displays ALL public posts */}
                         <div className="mb-12"> {/* Removed general fadeInUpCustom here as we'll add specific slide-in */}
                             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-8 tracking-wider text-center font-playfair animate-slide-in-left"> {/* Added animate-slide-in-left */}
                                 All Posts

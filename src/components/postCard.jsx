@@ -25,7 +25,7 @@ function PostCard({ $id, title, image }) {
 
     return (
         <Link to={`/post/${$id}`}>
-            {/* Main card container: Dark background, rounded, padding, shadow, border, and interactive hover effects */}
+            {/* Main card container: Dark background, rounded, padding, shadow, border, and interpublic hover effects */}
             <div className="
                 w-full h-full 
                 bg-gray-900 border border-gray-800 

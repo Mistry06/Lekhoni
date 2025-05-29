@@ -82,7 +82,7 @@ function Account() {
                 });
             }
 
-            // Fetch ALL posts (active and inactive) to check for liked posts by current user
+            // Fetch ALL posts (public and private) to check for liked posts by current user
             const allPostsResponse = await appwriteService.getPosts([
                 Query.limit(5000) // IMPORTANT: Set a high limit here too for counting liked posts
             ]);

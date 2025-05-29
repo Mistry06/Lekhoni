@@ -86,6 +86,41 @@ export class AuthService {
             throw error;
         }
     }
+     // --- Email Verification Methods (from previous discussions) ---
+     async sendVerificationEmail(redirectUrl) {
+        try {
+            return await this.account.createVerification(redirectUrl);
+        } catch (error) {
+            console.error("Appwrite service :: sendVerificationEmail :: error", error);
+            throw error;
+        }
+    }
+
+    async completeEmailVerification(userId, secret) {
+        try {
+            return await this.account.updateVerification(userId, secret);
+        } catch (error) {
+            console.error("Appwrite service :: completeEmailVerification :: error", error);
+            throw error;
+        }
+    }
+
+    // --- NEW METHOD FOR JWT GENERATION ---
+    /**
+     * Generates a short-lived JWT for the current authenticated session.
+     * This JWT can be used to authenticate with other services that trust Appwrite.
+     * @returns {Promise<object>} A promise that resolves with the JWT object (e.g., { jwt: "your.jwt.token" })
+     */
+    async createJwtForSession() {
+        try {
+            const jwtResponse = await this.account.createJWT();
+            console.log("Appwrite service :: createJwtForSession :: success", jwtResponse);
+            return jwtResponse;
+        } catch (error) {
+            console.error("Appwrite service :: createJwtForSession :: error", error);
+            throw error;
+        }
+    }
 }
 
 // Instantiate the service ONCE

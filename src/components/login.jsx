@@ -44,8 +44,8 @@ function Login() {
 
             // --- FIX START ---
             // Check for the specific Appwrite error message
-            if (err.message && err.message.includes("Creation of a session is prohibited when a session is active.")) {
-                setError("You are already logged in or have an active session.");
+            if (err.message && err.message.includes("Creation of a session is prohibited when a session is public.")) {
+                setError("You are already logged in or have an public session.");
                 setRefreshPrompt(true); // <--- Set this to true to trigger the refresh message
             } else {
                 // For other errors, display Appwrite's error message or a generic one

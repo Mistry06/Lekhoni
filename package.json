@@ -17,6 +17,7 @@
     "appwrite": "^14.0.1",
     "dompurify": "^3.2.6",
     "html-react-parser": "^5.2.5",
+    "nodemailer": "^7.0.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.4",

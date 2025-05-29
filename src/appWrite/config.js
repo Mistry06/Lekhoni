@@ -15,20 +15,22 @@ export class Service {
     }
 
     // Method to create a new post document in Appwrite
-    async createPost({ title, slug, content, image, status, userid, authorName, like }) { 
+    async createPost({ title, content, image, status, userid, authorName, like }) {
         try {
+            // Use ID.unique() to generate a random document ID for the new post
             return await this.databases.createDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                slug, // Using slug as document ID
+                ID.unique(), // <--- Use Appwrite's unique ID generator here
                 {
                     title,
                     content,
-                    image, // <--- This MUST be present and a valid file ID
+                    image,
                     status,
                     userid,
                     authorName,
                     like,
+                    // Removed 'slug' from the data object as it's no longer needed as a document attribute
                 }
             );
         } catch (error) {
@@ -36,37 +38,37 @@ export class Service {
             throw error;
         }
     }
-    // Method to update an existing post document
-    async updatePost(slug, { title, content, image, status, authorName, like /* This is now an array from LikeButtonComponent */ }) {
-        try {
-            // *** IMPORTANT: Stringify the 'like' array before sending to Appwrite ***
-            const dataToSend = {
-                title,
-                content,
-                image,
-                status,
-                authorName,
-                // Ensure 'like' is always a JSON string for Appwrite's string attribute
-                like: JSON.stringify(like || []), // Stringify the array, default to empty array if null/undefined
-            };
 
-            // Filter out undefined values if they cause issues with Appwrite partial updates
-            // (Appwrite updateDocument is usually good with partial updates, but it's good practice)
+    // Method to update an existing post document
+    async updatePost(slug, data) {
+        try {
+            // Create a mutable copy of the data.
+            // This is flexible, allowing you to pass any fields for update.
+            const dataToSend = { ...data };
+    
+            // It's good practice to filter out undefined values if they appear,
+            // although Appwrite's updateDocument typically handles partial updates well.
             Object.keys(dataToSend).forEach(key => {
                 if (dataToSend[key] === undefined) {
                     delete dataToSend[key];
                 }
             });
-
-
+    
+            // Perform the document update using the Appwrite SDK.
+            // The 'like' attribute in 'dataToSend' is already a JSON string (e.g., "[\"user1\", \"user2\"]"),
+            // so we **do not** apply JSON.stringify again here.
             return await this.databases.updateDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
                 slug,
-                dataToSend
+                dataToSend // Pass the dataToSend object directly
             );
         } catch (error) {
+            // Log any errors that occur during the Appwrite update operation.
+            // This log is vital for debugging in your browser's console.
             console.error("Appwrite service :: updatePost :: error", error);
+            // Re-throw the error so the calling function (like.jsx) can catch it
+            // and update its state, providing proper feedback to the user.
             throw error;
         }
     }
@@ -104,22 +106,25 @@ export class Service {
     }
 
     // Method to get a list of posts with optional queries (e.g., filter by status)
-    async getPosts(queries = []) {
-        try {
-            // Always add a query to filter for active posts
-            queries.push(Query.equal("status", "active"));
-            const response = await this.databases.listDocuments(
-                conf.appwriteDatabaseId,
-                conf.appwriteCollectionId,
-                queries
-            );
-            // console.log("Appwrite response:", response); // Uncomment for debugging list response
-            return response;
-        } catch (error) {
-            console.error("Appwrite Service :: getPosts :: error", error);
-            return null; // Return null on error
-        }
+  // appwriteService/config.js
+  async getPosts(queries = []) {
+    try {
+        // This is correct: no hardcoded 'status' filter here.
+        // It simply passes whatever 'queries' array it receives.
+        console.log("Appwrite Service DEBUG: getPosts called with queries:", queries);
+        const response = await this.databases.listDocuments(
+            conf.appwriteDatabaseId,
+            conf.appwriteCollectionId,
+            queries // Correctly passes the queries array directly
+        );
+        console.log("Appwrite Service DEBUG: getPosts response:", response);
+        return response;
+    } catch (error) {
+        console.error("Appwrite Service :: getPosts :: error", error);
+        return null;
     }
+}
+
 
     // Method to upload a file to Appwrite Storage
     async uploadFile(file) {

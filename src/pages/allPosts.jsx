@@ -24,10 +24,10 @@ function AllPosts() {
             try {
                 const response = await appwriteService.getPosts([
                     Query.equal("userid", userData.$id), // Filter by current user's ID
-                    // *** CRUCIAL CHANGE HERE: Add Query.or to include both 'active' and 'inactive' statuses ***
+                    // *** CRUCIAL CHANGE HERE: Add Query.or to include both 'public' and 'private' statuses ***
                     Query.or([
-                        Query.equal("status", "active"),
-                        Query.equal("status", "inactive")
+                        Query.equal("status", "public"),
+                        Query.equal("status", "private")
                     ])
                 ]);
 

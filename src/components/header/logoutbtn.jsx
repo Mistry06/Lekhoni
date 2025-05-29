@@ -51,9 +51,9 @@ function LogoutBtn() {
                     hover:bg-red-700
                     hover:-translate-y-1
                     hover:shadow-lg
-                    active:bg-red-800
-                    active:translate-y-0
-                    active:shadow-sm
+                    public:bg-red-800
+                    public:translate-y-0
+                    public:shadow-sm
                     focus:outline-none
                     focus:ring-2
                     focus:ring-red-500
